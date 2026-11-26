@@ -1,5 +1,7 @@
 # similFranz Monitor per Android
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24563982.svg)](https://doi.org/10.5281/zenodo.24563982)
+
 **Due tablet Android diventano un monitor-defibrillatore da simulazione e la sua cabina di regia.**
 Pensato per un Samsung® Galaxy® Tab Active2, gira su tablet Android™ 8 o successivi. Open source, per formatori,
 istruttori e facilitatori di simulazione sanitaria.
@@ -117,6 +119,16 @@ revisioni/    sintesi delle revisioni specialistiche simulate e delle correzioni
   cercati e riprodotti con script, analisi dell'usabilità della regia.
 - **Guscio.** Stabilità sulla pedana inclinabile, montabilità con gli inserti a caldo, controllo delle mesh:
   [stampa3d/verifiche/VERIFICHE.md](stampa3d/verifiche/VERIFICHE.md). Simulazioni al computer, non una certificazione.
+
+## Come citarlo
+
+Se lo usi in un corso, un poster o un articolo, trovi la citazione pronta con il pulsante
+**Cite this repository** qui su GitHub (file [`CITATION.cff`](CITATION.cff)). Ogni versione è archiviata
+su [Zenodo](https://zenodo.org), l'archivio scientifico del CERN, con un DOI permanente:
+[doi.org/10.5281/zenodo.24563982](https://doi.org/10.5281/zenodo.24563982) (punta sempre all'ultima versione).
+
+> Palmisano, F. (2026). *similFranz Monitor per Android: simulatore di monitor-defibrillatore guidato dal facilitatore,
+> su tablet riutilizzati, per la simulazione sanitaria*. Zenodo. https://doi.org/10.5281/zenodo.24563982
 
 ## Licenze, marchi e responsabilità
 

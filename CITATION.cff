@@ -15,6 +15,15 @@ authors:
     alias: ilFranz
     orcid: "https://orcid.org/0009-0009-9368-0212"
 version: 0.1.0
+doi: 10.5281/zenodo.24563982
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24563982
+    description: "Tutte le versioni su Zenodo / All versions on Zenodo"
+  - type: doi
+    value: 10.5281/zenodo.24563983
+    description: "Versione 0.1.0"
+date-released: 2026-11-26
 license: GPL-3.0-only
 repository-code: "https://github.com/Franz8787/similfranz-monitor-android"
 url: "https://franz8787.github.io/similfranz-monitor-android/"
