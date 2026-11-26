@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24563982.svg)](https://doi.org/10.5281/zenodo.24563982)
 
+Fa parte dell'**ecosistema similFranz**: tutti gli strumenti sulla [pagina similFranz](https://franz8787.github.io/similfranz/).
+
 **Due tablet Android diventano un monitor-defibrillatore da simulazione e la sua cabina di regia.**
 Pensato per un Samsung® Galaxy® Tab Active2, gira su tablet Android™ 8 o successivi. Open source, per formatori,
 istruttori e facilitatori di simulazione sanitaria.
