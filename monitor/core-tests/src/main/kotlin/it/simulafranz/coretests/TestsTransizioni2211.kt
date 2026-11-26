@@ -262,7 +262,8 @@ fun testTransizioni2211() {
     val steps = shown.zipWithNext { x, y -> y - x }.filter { it != 0 }
     CHECK(steps.isNotEmpty() && steps.count { it >= 3 } >= 3 && shown.zipWithNext().count { it.first == it.second } >= 2) { "FC a schermo a gradini irregolari, non +1 alla volta ($shown)" }
     CHECK(shown[4] < 82 + (130 - 82) * 5 / 20 && shown.last() in 128..132) { "FC a schermo: segue la rampa con un lieve ritardo, poi 130 ($shown)" }
-    CHECK(sp[7] >= 96 && sp.last() in 84..86) { "SpO2 a schermo: ~10 s di ritardo del dito, poi media fino a 85 ($sp)" }
+    // ANDROID (26/11): niente ritardo di circolazione: il numero segue la rampa (vero a 8 s ≈ 93) e arriva a 85 entro ~3 s dalla fine
+    CHECK(sp[7] in 92..96 && sp[22] in 84..86 && sp.last() in 84..86) { "SpO2 a schermo: segue la rampa da vicino, poi 85 ($sp)" }
     CHECK(INT(s.stateDictionary()["heart_rate_bpm"]) == 130 && INT(s.stateDictionary()["monitor_numerics"]["heart_rate_bpm"]) in 128..132,
           "valori veri per la regia; monitor_numerics per lo schermo")
     // EtCO2 a ogni espirazione

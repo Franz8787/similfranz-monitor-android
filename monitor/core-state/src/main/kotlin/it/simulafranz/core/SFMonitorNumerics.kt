@@ -93,9 +93,12 @@ internal class SFMonitorNumerics {
             while (now - spAt >= 0.5) { spAt += 0.5; pushSp(s.spo2.toDouble()) }
             if (now - spUpd >= 1.0) {
                 spUpd = now
-                val delay = if (s.systolic in 1..79 || s.spo2LowPerfusionFlag) 15.0 else 10.0
-                // campioni tra (adesso - ritardo - 8 s) e (adesso - ritardo)
-                val back0 = (delay / 0.5).toInt(); val back1 = ((delay + 8.0) / 0.5).toInt()
+                // ANDROID (26/11, segnalazione utente): niente ritardo di circolazione sul numero (lo dà già la rampa dell'istruttore:
+                // prima 10-15 s + media di 8 s = una desaturazione 100→40 arrivava a schermo con quasi 20 s di ritardo).
+                // Resta una latenza tecnica minima e una media breve (3 s, come un saturimetro in modalità «veloce»).
+                val delay = if (s.systolic in 1..79 || s.spo2LowPerfusionFlag) 2.0 else 1.0
+                // campioni tra (adesso - ritardo - 3 s) e (adesso - ritardo)
+                val back0 = (delay / 0.5).toInt(); val back1 = ((delay + 3.0) / 0.5).toInt()
                 var sum = 0.0; var c = 0
                 for (b in back0 until back1) { if (b >= spN) break; sum += sp[(spHead + spN - 1 - b + 80) % 80]; c++ }
                 if (c == 0) { sum = sp[spHead % 80]; c = 1 }          // storia più corta del ritardo: il campione più vecchio
