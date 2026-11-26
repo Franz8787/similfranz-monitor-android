@@ -1,0 +1,137 @@
+{
+ "tablet_kg": 0.419,
+ "plastica_kg": 0.611,
+ "minuteria_kg": 0.02,
+ "massa_vuota_kg": 1.05,
+ "mu_piedini": 0.9,
+ "mu_pedana": 1.0,
+ "frequenza_Hz": 600,
+ "pedana": [
+  {
+   "direzione": "avanti",
+   "borsa_g": 0,
+   "massa_kg": 1.05,
+   "battuta": true,
+   "ribalta_a_deg": 27.383333333333333,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.197,
+   "a_10deg_spostamento_mm": 0.34
+  },
+  {
+   "direzione": "indietro",
+   "borsa_g": 0,
+   "massa_kg": 1.05,
+   "battuta": true,
+   "ribalta_a_deg": 36.31666666666667,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.02,
+   "a_10deg_spostamento_mm": 0.33
+  },
+  {
+   "direzione": "lato",
+   "borsa_g": 0,
+   "massa_kg": 1.05,
+   "battuta": true,
+   "ribalta_a_deg": 52.68333333333333,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.0,
+   "a_10deg_spostamento_mm": 0.31
+  },
+  {
+   "direzione": "avanti",
+   "borsa_g": 300,
+   "massa_kg": 1.35,
+   "battuta": true,
+   "ribalta_a_deg": 39.8,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.0,
+   "a_10deg_spostamento_mm": 0.32
+  },
+  {
+   "direzione": "indietro",
+   "borsa_g": 300,
+   "massa_kg": 1.35,
+   "battuta": true,
+   "ribalta_a_deg": 31.95,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.0,
+   "a_10deg_spostamento_mm": 0.3
+  },
+  {
+   "direzione": "lato",
+   "borsa_g": 300,
+   "massa_kg": 1.35,
+   "battuta": true,
+   "ribalta_a_deg": 55.36666666666667,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.0,
+   "a_10deg_spostamento_mm": 0.3
+  },
+  {
+   "direzione": "avanti",
+   "borsa_g": 0,
+   "massa_kg": 1.05,
+   "battuta": false,
+   "ribalta_a_deg": 26.6,
+   "scivola_a_deg": null,
+   "a_10deg_inclinazione_relativa_deg": 0.732,
+   "a_10deg_spostamento_mm": 1.14
+  }
+ ],
+ "foto": [
+  {
+   "file": "pedana_avanti_vuota_0.png",
+   "pedana_deg": 10.0,
+   "guscio_deg": 0.197,
+   "spost_mm": 0.34
+  },
+  {
+   "file": "pedana_avanti_vuota_1.png",
+   "pedana_deg": 26.9,
+   "guscio_deg": 0.2,
+   "spost_mm": 0.36
+  },
+  {
+   "file": "pedana_avanti_vuota_2.png",
+   "pedana_deg": 27.65,
+   "guscio_deg": 20.124,
+   "spost_mm": 29.97
+  },
+  {
+   "file": "pedana_indietro_vuota_0.png",
+   "pedana_deg": 10.0,
+   "guscio_deg": 0.02,
+   "spost_mm": 0.33
+  },
+  {
+   "file": "pedana_indietro_vuota_1.png",
+   "pedana_deg": 35.82,
+   "guscio_deg": 0.0,
+   "spost_mm": 1.52
+  },
+  {
+   "file": "pedana_indietro_vuota_2.png",
+   "pedana_deg": 36.57,
+   "guscio_deg": 16.105,
+   "spost_mm": 28.12
+  },
+  {
+   "file": "pedana_lato_vuota_0.png",
+   "pedana_deg": 10.0,
+   "guscio_deg": 0.0,
+   "spost_mm": 0.31
+  },
+  {
+   "file": "pedana_lato_vuota_1.png",
+   "pedana_deg": 52.2,
+   "guscio_deg": 0.059,
+   "spost_mm": 0.53
+  },
+  {
+   "file": "pedana_lato_vuota_2.png",
+   "pedana_deg": 52.95,
+   "guscio_deg": 5.251,
+   "spost_mm": 12.31
+  }
+ ]
+}

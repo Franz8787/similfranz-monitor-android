@@ -1,0 +1,35 @@
+{
+  "title": "similFranz Monitor per Android: simulatore di monitor-defibrillatore guidato dal facilitatore, su tablet riutilizzati, per la simulazione sanitaria",
+  "upload_type": "software",
+  "version": "0.1.0",
+  "license": "GPL-3.0-only",
+  "description": "<p><strong>Razionale.</strong> Nella formazione basata sulla simulazione il monitor-defibrillatore è una fonte primaria di <em>cue</em> clinici: la sua fedeltà funzionale, cioè la coerenza fra le azioni dei partecipanti e la risposta del dispositivo, sostiene il ragionamento clinico e il realismo percepito. Il costo dei simulatori di monitor commerciali ne limita la diffusione, in particolare nella simulazione <em>in situ</em> e nei contesti con poche risorse.</p><p><strong>Descrizione.</strong> similFranz Monitor per Android è uno strumento open source che trasforma due tablet Android riutilizzati in un monitor-defibrillatore simulato e nella sua regia. È guidato dal facilitatore (<em>instructor-driven</em>): i parametri cambiano con transizioni temporizzate, gli scenari avanzano per fasi allineate agli obiettivi di apprendimento e l'esito di ogni scarica è deciso da chi conduce. I segnali compaiono solo quando il sensore corrispondente è applicato; carica e scarica si eseguono anche dai tasti fisici del tablet, con riscontro sonoro e tattile. Il collegamento diretto fra i tablet non richiede una rete. Un registro con marcatura temporale e un piano di debriefing con gli intervalli delle azioni critiche offrono una base oggettiva per la riflessione del gruppo, nel ciclo familiarizzazione, scenario, debriefing.</p><p><strong>Limiti.</strong> Lo strumento non è stato oggetto di studi di validazione né di valutazione dell'efficacia formativa. Il modello fisiologico è semplificato e orientato alla plausibilità dei segnali. Le revisioni specialistiche descritte nell'archivio sono state simulate con l'intelligenza artificiale sotto la guida dell'autore e non sostituiscono il parere di professionisti.</p><p><strong>English.</strong> similFranz Monitor for Android is an open-source, low-cost simulated patient monitor and defibrillator for healthcare simulation, running on two repurposed Android tablets: one is the participants' device, the other is the facilitator's console. It is instructor-driven, with timed parameter transitions, phased scenarios aligned with learning objectives and facilitator-decided shock outcomes. Sensor-dependent signal display, hardware keys acting as charge and shock, and sound and haptic feedback support functional fidelity; tablet-to-tablet connection needs no network, enabling in situ simulation. A time-stamped event log and a debriefing plan reporting critical-action intervals support structured debriefing. <em>Limitations:</em> no validation or educational-effectiveness study has been conducted; the physiological model is simplified; the specialist reviews described in the repository were simulated with AI under the author's direction.</p><p><strong>Solo per la simulazione sanitaria: non è un dispositivo medico e non va mai usato su pazienti. / For healthcare simulation only: not a medical device, never to be used on patients.</strong></p><p>Licenze / Licences: codice e documentazione GNU GPL v3; modelli 3D (stampa3d/) CC BY-NC 4.0.</p>",
+  "creators": [
+    {
+      "name": "Palmisano, Francesco",
+      "orcid": "0009-0009-9368-0212"
+    }
+  ],
+  "keywords": [
+    "healthcare simulation",
+    "simulation-based education",
+    "in situ simulation",
+    "functional fidelity",
+    "instructor-driven simulation",
+    "debriefing",
+    "scenario design",
+    "simulated patient monitor",
+    "defibrillation training",
+    "resuscitation training",
+    "low-cost simulation",
+    "frugal innovation",
+    "device reuse",
+    "e-waste reduction",
+    "open source",
+    "3D printing",
+    "Android",
+    "simulazione sanitaria"
+  ],
+  "language": "ita",
+  "notes": "Non è un dispositivo medico. I layout sono originali e non riproducono dispositivi in commercio. Samsung e Galaxy sono marchi registrati di Samsung Electronics Co., Ltd.; Android è un marchio di Google LLC; Wi-Fi Direct è un marchio registrato di Wi-Fi Alliance. Progetto indipendente, non affiliato ai titolari dei marchi né ad alcun produttore di monitor o defibrillatori. Not a medical device; not affiliated with Samsung, Google or any monitor manufacturer. Sviluppo assistito da Claude Code (Anthropic), assistente di programmazione basato sull'IA, sotto la guida e la verifica dell'autore. / Developed with the help of Claude Code (Anthropic), an AI coding assistant, under the author's direction and review."
+}

@@ -1,0 +1,18 @@
+# compilazioni e file locali
+build/
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+*.idsig
+apk/
+.idea/
+*.iml
+.DS_Store
+# chiavi di firma e segreti: MAI nella repo
+*.jks
+*.keystore
+*.p12
+*.pem
+.env

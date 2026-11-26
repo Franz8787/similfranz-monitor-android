@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- retro della cartella con la linguetta -->
+    <path android:fillColor="#FFD08E1C" android:pathData="M27,34 L44,34 L49,39 L81,39 Q84,39 84,42 L84,78 L24,78 L24,37 Q24,34 27,34 Z" />
+    <!-- documento -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M35,27 L65,27 L73,35 L73,70 L35,70 Z" />
+    <path android:fillColor="#FFCFD8DC" android:pathData="M65,27 L65,35 L73,35 Z" />
+    <path android:fillColor="#FF1B5E8C" android:pathData="M40,35 h20 v3 h-20 z M40,41 h28 v3 h-28 z" />
+    <!-- traccia ECG -->
+    <path android:strokeColor="#FFE53935" android:strokeWidth="2.6" android:strokeLineJoin="round" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M40,52 L47,52 L50,46 L54,58 L57,52 L68,52" />
+    <!-- davanti della cartella -->
+    <path android:fillColor="#FFF4B53F" android:pathData="M22,57 L86,57 L83,80 Q82.6,82 80,82 L28,82 Q25.4,82 25,80 Z" />
+    <path android:fillColor="#33FFFFFF" android:pathData="M22,57 L86,57 L85.6,60 L22.4,60 Z" />
+</vector>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>similFranz Controller</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- La regia web si usa solo dal computer: su telefoni e tablet mostra solo questo avviso e non avvia la console -->
+<section id="phoneOnly" class="card login" hidden>
+  <h1>similFranz Controller</h1>
+  <p><b>La regia web si usa dal computer.</b> Apri il browser di un PC o di un Mac collegato alla stessa rete Wi-Fi
+    del monitor e scrivi l'indirizzo che vedi sul monitor (tasto <b>ⓘ</b>, «Collegamento del controller»).</p>
+  <!-- ANDROID (affordance 22/11, W-08): niente «iPad» nella versione Android -->
+  <p>Per condurre da un dispositivo che sta in mano c'è l'app <b>similFranz Controller</b> sul tablet, collegata direttamente al monitor
+    (e, dove c'è, <b>Pocket</b> sull'iPod touch).</p>
+  <p class="foot">SIMULAZIONE — NON PER USO CLINICO</p>
+</section>
+
+<section id="login" class="card login">
+  <h1>similFranz Controller</h1>
+  <p>Inserisci il PIN mostrato dal monitor (tasto <b>ⓘ</b> sul monitor, pannello «Collegamento del controller»).</p>
+  <form id="loginForm">
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" required>
+    <button type="submit" class="primary">Entra</button>
+  </form>
+  <p id="loginErr" class="err"></p>
+  <p class="foot">SIMULAZIONE — NON PER USO CLINICO · <span id="conn" class="conn off">non connesso</span></p>
+</section>
+
+<div id="console" hidden>
+  <!-- ===== in alto: identita', valori VERI del paziente, azioni rapide ===== -->
+  <header class="top">
+    <!-- un solo controller alla volta: avviso quando comanda un altro.
+         ANDROID (affordance 22/11, W-10): nel flusso della pagina, sopra le tessere (prima era sospeso e copriva FC e PA) -->
+    <div id="busy" class="busybar" hidden>
+      <span>Comanda <b id="busyName"></b><span id="busyVia"></span><span id="busyHow">: da qui puoi solo osservare.</span></span>
+      <button id="takeCtl" class="primary">Prendi il comando</button>
+    </div>
+    <!-- ANDROID (affordance 22/11, W-02): monitor non raggiungibile: fascia a tutta larghezza (i valori sotto sono velati) -->
+    <div id="staleBar" class="stalebar" hidden role="alert"></div>
+    <div class="topline">
+      <div class="brand">similFranz Controller <span id="device">→ monitor</span></div>
+      <span class="simtag">SIMULAZIONE</span>
+      <div class="spacer"></div>
+      <!-- ANDROID (sala web 22/11): «Sala» in diretta (fotocamera frontale e microfono del monitor, niente registrazione) -->
+      <button id="salaEar" class="small salaear" hidden title="Stai ascoltando il microfono del monitor: clic per spegnere l'audio">Audio sala acceso · Spegni</button>
+      <button id="salaBtn" class="ghost small salabtn" title="Immagine e audio della sala dal monitor, in diretta (niente viene registrato)">Sala</button>
+      <span id="conn2" class="conn off">non connesso</span>
+      <button id="logout" class="ghost small">Esci</button>
+    </div>
+    <div class="live">
+      <div class="tile rhythm" data-card="card_rhythm" title="Ritmo vero del paziente — clic per regolarlo">
+        <span>Ritmo</span><em id="v_ecgm" class="ecgtag" hidden></em><b id="v_rhythm">--</b><small id="v_pulse" class="monline"></small>
+      </div>
+      <div class="tile hr" data-card="card_rhythm" title="FC vera del paziente; sotto: che cosa vede il discente — clic per regolarla">
+        <span>FC <small>bpm</small></span><b id="v_hr">--</b><small id="m_hr" class="monline"></small>
+      </div>
+      <div class="tile art" data-card="card_bp" title="PA vera del paziente; sotto: ART e ultima NIBP a monitor — clic per regolarla">
+        <span>PA <small>mmHg</small></span><b id="v_bp">--</b><small id="m_bp" class="monline"></small>
+      </div>
+      <div class="tile spo2" data-card="card_resp" title="SpO₂ vera del paziente; sotto: che cosa vede il discente — clic per regolarla">
+        <span>SpO₂ <small>%</small></span><b id="v_spo2">--</b><small id="m_spo2" class="monline"></small>
+      </div>
+      <div class="tile co2" data-card="card_resp" title="FR ed EtCO₂ veri del paziente — clic per regolarli">
+        <span>FR · EtCO₂</span><b id="v_co2">--</b><small id="m_co2" class="monline"></small>
+      </div>
+      <div class="tile temp" data-card="card_exam" title="Temperatura e refill capillare veri del paziente — clic per regolarli (anche «refill visibile sul monitor»)">
+        <span>Temp · Refill</span><b id="v_temp">--</b><small id="m_temp" class="monline"></small>
+      </div>
+      <div class="tile defib" data-card="panel_defib" title="Stato del defibrillatore usato dal discente — clic per le regole">
+        <span>Defibrillatore</span><b id="v_defib">spento</b><small id="v_defib_sub" class="monline"></small>
+      </div>
+    </div>
+    <div class="quick">
+      <button id="cpr" class="act danger">▶ RCP</button>
+      <button id="vent" class="act" title="Toccalo a ogni insufflazione dei partecipanti (30:2 = due tocchi): sul capnogramma compare l'onda e a monitor l'EtCO₂. Attivo con l'RCP in corso o in apnea.">Ventila</button>
+      <button id="nibpStart" class="act nibp">Misura NIBP</button>
+      <button id="mute" class="act amber">Silenzia 20 s</button>
+      <button id="touch" class="act touch" title="Un operatore tocca o scuote il paziente per 3 s (qualsiasi ritmo): artefatto su ECG e piastre, il DAE interrompe l'analisi">Tocco operatore</button>
+      <span class="motion" title="Movimenti del paziente (solo con un ritmo con polso): artefatti su ECG e pletismo, interrompono l'analisi del DAE, una misura NIBP con movimenti marcati non riesce">
+        <span class="mlab">Movimenti</span>
+        <span class="seg" id="motionSeg"><button data-v="off">Fermo</button><button data-v="light">Lievi</button><button data-v="strong">Marcati</button></span>
+        <select id="motionDur" title="Durata"><option value="0">continui</option><option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option><option value="20">20 s</option></select>
+        <small id="motionLeft"></small>
+      </span>
+    </div>
+  </header>
+
+  <!-- ===== la regia: stati | plancia | registro ===== -->
+  <div class="regia">
+
+    <aside class="rstates">
+      <!-- conduzione manuale per stati, oppure scenario a fasi (le fasi le fa avanzare l'istruttore) -->
+      <div class="seg railsw" id="railSw" role="tablist" aria-label="Modo di conduzione">
+        <button data-v="states" role="tab">Stati</button>
+        <button data-v="scen" role="tab">Scenario<i id="railSwDot" hidden> ▸</i></button>
+      </div>
+      <div class="railpane" id="railStates">
+        <div class="rhead"><h3>Stati del paziente</h3></div>
+        <p class="railhint">Un tocco prepara l'intero quadro clinico: controlli e attivi.</p>
+        <div class="statechips" id="stateChips"></div>
+        <div class="stateexp" id="stateExp" hidden></div>
+        <div class="railfoot">
+          <span class="instate" id="inState"></span>
+          <button id="saveState" class="ghost small wide" title="Fotografa i valori veri di adesso in un nuovo stato riutilizzabile">+ Salva lo stato attuale</button>
+        </div>
+      </div>
+      <div class="railpane" id="railScen" hidden></div>
+    </aside>
+
+    <main class="plancia">
+      <!-- ANDROID (trasmissione 12D 22/11): i partecipanti hanno trasmesso il 12 derivazioni dal monitor (voce del registro "ecg12_tx"):
+           l'istruttore fa da centrale e risponde (voce "ecg12_rx"). Attivo anche in sola osservazione (è un'annotazione). -->
+      <div class="tx12" id="tx12" hidden role="alert">
+        <div class="tx12h"><b>ECG 12D trasmesso alla Centrale Operativa per valutazione</b><span id="tx12When"></span></div>
+        <div class="tx12d" id="tx12Det"></div>
+        <div class="row tx12act">
+          <button id="tx12Reply" class="primary">Rispondi come centrale</button>
+          <button id="tx12Close" class="ghost small" title="Chiude l'avviso su questa pagina senza scrivere nel registro">Chiudi l'avviso</button>
+        </div>
+        <div class="tx12opts" id="tx12Opts" hidden>
+          <div class="tx12q" id="tx12Quick"></div>
+          <div class="row"><input id="tx12Free" type="text" maxlength="160" placeholder="Risposta libera della centrale…"><button id="tx12FreeGo">Invia risposta</button></div>
+          <p class="hint">La risposta finisce nel registro con il tuo nome. I dispositivi veri non mostrano risposte: sul monitor non compare niente.</p>
+        </div>
+      </div>
+      <div class="decide" id="d_decide" hidden>
+        <b id="d_decide_text"></b>
+        <div class="row">
+          <button id="d_dec_sinus" class="green">→ Sinusale</button>
+          <button id="d_dec_stay">Resta nel ritmo pre-scarica</button>
+        </div>
+        <div class="row"><label class="hint" for="d_dec_other">Altro ritmo</label><select id="d_dec_other"></select><button id="d_dec_other_go" class="ghost">Applica</button></div>
+      </div>
+
+      <nav class="pnav" id="pnav">
+        <!-- ANDROID (affordance 22/11, W-05): sotto i 1366 px etichette brevi, schede su una riga -->
+        <button data-card="card_rhythm"><span class="lng">Ritmo · FC</span><span class="sht">Ritmo</span></button>
+        <button data-card="card_bp"><span class="lng">Pressione</span><span class="sht">PA</span></button>
+        <button data-card="card_resp">Respiro</button>
+        <button data-card="card_exam" title="Temperatura e refill capillare"><span class="lng">Esame · Refill</span><span class="sht">Esame</span></button>
+        <button data-card="card_physio"><span class="lng">Fisiologia</span><span class="sht">Fisiol.</span></button>
+        <i class="pnavsep"></i>
+        <button data-card="panel_defib"><span class="lng">Defibrillatore</span><span class="sht">Defib</span> <span id="tabDefibBadge" class="badge" hidden>!</span></button>
+        <button data-card="panel_monitor">Monitor</button>
+        <button data-card="panel_oxi"><span class="lng">Saturimetro</span><span class="sht">Saturim.</span> <span id="oxiBadge" class="badge" hidden></span></button>
+        <button data-card="panel_alarms">Allarmi</button>
+        <!-- ANDROID (funzioni mancanti 22/11): linee invasive, ventilazione, distrattori, esami, trend -->
+        <button data-card="panel_lines" title="Linea arteriosa (zero, lavaggio, smorzamento, livello), PVC, temperatura centrale"><span class="lng">Linee · PVC</span><span class="sht">Linee</span></button>
+        <button data-card="panel_vent" title="Respiro spontaneo, ventilatore, pallone; PPV"><span class="lng">Ventilazione</span><span class="sht">Vent.</span></button>
+        <button data-card="panel_distr" title="Elettrodi, disturbo, inversione dei cavi, allarmi tecnici, piastre"><span class="lng">Distrattori</span><span class="sht">Distr.</span></button>
+        <button data-card="panel_labs" title="EGA, lattati, glicemia, diuresi: vanno nel registro (non sul monitor)">Esami</button>
+        <button data-card="panel_trend" title="Storia dei parametri a schermo">Trend</button>
+      </nav>
+      <!-- ANDROID (affordance 22/11, W-04): striscia dei messaggi a tre stati (✓ eseguito verde, ⓘ avviso azzurro, ✕ non eseguito rosso) -->
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      <!-- ANDROID (affordance 22/11, W-01): con una durata scelta, la fascia PREPARAZIONE sta vicino ai controlli -->
+      <div id="prepBand" class="prepband" hidden>
+        <span id="prepText"></span>
+        <button id="prepGo" class="yellow" hidden>▶ Avvia</button>
+        <button id="prepDrop" class="ghost" hidden>Scarta</button>
+        <button id="prepNow" class="ghost small" title="Torna a «Scatto · 0 s»: ogni modifica parte subito">Torna a Scatto</button>
+      </div>
+
+      <div class="pbody">
+        <section class="pcard" id="card_rhythm">
+          <h4>Ritmo e frequenza</h4>
+          <!-- ANDROID (righello a zone 22/11, richiesta utente): la morfologia è IN CIMA alla scheda Ritmo (una riga: morfologia di adesso,
+               «Modifica ›»), come sul tablet controller -->
+          <!-- ANDROID (regia morfologie ECG 22/11): morfologia dell'ECG (separata dal ritmo: resta col cambio di ritmo). Gruppi con i nomi
+               clinici; le combinazioni che il monitor rifiuta sono spente con il motivo; con una durata scelta va nel pacchetto di «▶ Avvia» -->
+          <details class="ecgm" id="ecgmBox">
+            <summary><span class="olab">Morfologia ECG</span><b id="ecgmNow">normale</b><span id="ecgmPend" class="ecgmpend" hidden>IN ATTESA</span>
+              <span class="ecgmedit">Modifica ›</span>
+              <button type="button" id="ecgmNormal" class="ghost small" title="Toglie tutte le alterazioni della morfologia (il ritmo non cambia)">ECG normale</button></summary>
+            <div class="ecgmgrp"><div class="rlab">Tratto ST <small>(territorio)</small></div><div class="ecgopts" data-f="st"></div>
+              <label class="inline ecgmmm">Ampiezza nella derivazione più alterata <select id="ecgStMm"></select></label></div>
+            <div class="ecgmgrp"><div class="rlab">Blocchi di branca ed emiblocchi</div><div class="ecgopts" data-f="bbb"></div></div>
+            <div class="ecgmgrp"><div class="rlab">Blocchi atrioventricolari <small>(la FC impostata resta quella dei ventricoli)</small></div><div class="ecgopts" data-f="av_block"></div>
+              <label class="inline ecgmpr" hidden>PR <select id="ecgPr"></select></label>
+              <span class="ecgmesc" hidden><span class="olab">Scappamento</span><span class="seg" id="ecgEsc"><button type="button" data-v="ventricular">Ventricolare (35/min, QRS largo)</button><button type="button" data-v="junctional">Giunzionale (45/min, QRS stretto)</button></span></span></div>
+            <div class="ecgmgrp"><div class="rlab">Altre alterazioni <small>(anche più di una)</small></div><div class="ecgopts multi" data-f="extra"></div></div>
+            <p class="hint ecgmwhy" id="ecgmWhy"></p>
+            <label class="sw" id="ecgInterp"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Interpretazione automatica sul 12D</b> <small>il referto stampato sulla carta a 12 derivazioni</small></span></label>
+          </details>
+          <div class="rhythmbox"></div>
+          <!-- ANDROID (insorgenza e ampiezza FV 22/11): come parte il ritmo scelto (preludio fisiologico o di colpo), preludio in
+               corso con «Subito ora», ampiezza della FV con la FV attuale o in arrivo -->
+          <div class="onsetrow">
+            <span class="olab">Insorgenza</span>
+            <span class="seg" id="onsetSeg"><button type="button" data-v="auto">Realistica</button><button type="button" data-v="immediate">Di colpo</button></span>
+            <small id="onsetHint"></small>
+          </div>
+          <div id="onsetBand" class="onsetband" hidden>
+            <div class="otxt"><b id="onsetTitle"></b><span id="onsetText"></span><i class="obar"><b></b></i></div>
+            <button type="button" id="onsetSkip" title="Salta il preludio: il ritmo in arrivo parte adesso, di colpo">Subito ora</button>
+          </div>
+          <div id="vfBox" class="vfbox" hidden>
+            <div class="vfrow">
+              <span class="olab">Ampiezza FV</span>
+              <span class="seg" id="vfSeg"><button type="button" data-v="coarse">Grossolana</button><button type="button" data-v="fine">Fine</button><button type="button" data-v="auto">Automatica</button></span>
+              <input type="range" id="vfRange" min="0.05" max="1.5" step="0.01" value="1" title="Ampiezza in mV (0,05–1,5): si applica quando lasci il cursore">
+              <b id="vfVal"></b>
+            </div>
+            <p id="vfWarn" class="vfwarn" hidden>Sotto 0,1 mV il DAE non consiglierà la scarica (la legge come un'asistolia).</p>
+          </div>
+          <div class="ctl" data-p="heart_rate_bpm"></div>
+        </section>
+
+        <section class="pcard" id="card_bp">
+          <h4>Pressione arteriosa</h4>
+          <div class="ctl" data-p="systolic_mmhg"></div>
+          <div class="ctl" data-p="diastolic_mmhg"></div>
+          <div class="subblk nibpnow">
+            <div><span class="lab">Ultima NIBP</span><b id="n_last">---/---</b><small id="n_state"></small></div>
+            <button id="nibpStart2" class="nibp">Misura ora</button>
+          </div>
+          <label class="inline">NIBP automatica ogni <select id="nibpInterval"><option value="0">spenta</option><option value="1">1 min</option><option value="2">2 min</option>
+            <option value="3">3 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option>
+            <option value="30">30 min</option><option value="60">60 min</option></select></label>
+          <p class="hint" id="nibpNext"></p>
+          <p class="hint warnline" id="artNote"></p>
+        </section>
+
+        <section class="pcard" id="card_resp">
+          <h4>Respiro e ossigenazione</h4>
+          <div class="ctl" data-p="spo2_percent"></div>
+          <p class="hint warnline" id="spo2Note"></p>
+          <div class="ctl" data-p="respiratory_rate_rpm"></div>
+          <div class="ctl" data-p="etco2_mmhg"></div>
+          <details class="subopts">
+            <summary>Opzioni sonda SpO₂</summary>
+            <label class="sw" id="signalSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Segnale SpO₂</b> <small>presente / assente (artefatto)</small></span></label>
+            <label class="sw flag" id="lowPerfSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Bassa perfusione / artefatti</b> <small>"?" e onda disturbata</small></span></label>
+            <label class="inline">Ritardo comparsa del valore <select id="spo2Delay"></select> <small id="spo2Acq"></small></label>
+          </details>
+          <p class="hint">Con FR 0 (apnea) la capnografia diventa piatta.</p>
+        </section>
+
+        <section class="pcard" id="card_exam">
+          <h4>Esame clinico: temperatura e refill capillare</h4>
+          <div class="ctl" data-p="temperature_c"></div>
+          <div class="ctl" data-p="crt_s"></div>
+          <button class="crtAssess" title="Il partecipante chiede il refill a voce: parte la valutazione sul monitor e dopo ~3 s compare il tempo">Fai valutare il refill sul monitor</button>
+        </section>
+
+        <section class="pcard" id="card_physio">
+          <h4>Fisiologia automatica</h4>
+          <button class="toggle wide autoPhysio"></button>
+          <p class="hint">In arresto (TV senza polso, FV, asistolia, PEA) SpO₂, FR ed EtCO₂ scendono a 0; al ROSC risalgono.</p>
+        </section>
+
+        <section class="pcard flat" id="panel_defib">
+          <div class="card">
+            <div class="phead"><h4>Stato</h4>
+              <label class="inline">Modalità <select id="d_mode"><option value="off">spento</option><option value="aed">DAE</option>
+                <option value="manual">manuale</option><option value="pacer">pacer</option></select></label></div>
+            <div class="dstatus" id="d_status"></div>
+            <p class="hint">Il discente usa il defibrillatore sul monitor. Qui decidi cosa succede dopo le scariche e quando il pacing cattura. Le piastre si applicano dal torace del paziente (figura in basso).</p>
+          </div>
+          <div class="card">
+            <div class="phead"><h4>Esito delle scariche</h4>
+              <div class="seg" id="d_outcome"><button data-v="instructor">Decido io</button><button data-v="auto">Regole automatiche</button></div></div>
+            <div class="dcfg" id="d_rules">
+              <fieldset><legend>Defibrillazione · FV / TV senza polso</legend>
+                <label>Scariche efficaci per convertire <input type="number" id="c_shocks_to_convert" min="0" max="10"> <small>0 = mai</small></label>
+                <label>Energia minima efficace <input type="number" id="c_min_energy_j" min="0" max="360"> J</label>
+                <label>Ritmo dopo la conversione <select id="c_post_shock_rhythm"></select></label></fieldset>
+              <fieldset><legend>Cardioversione · FA / TV con polso</legend>
+                <label>Scariche efficaci per convertire <input type="number" id="c_cv_shocks_to_convert" min="0" max="10"> <small>0 = mai</small></label>
+                <label>Energia minima efficace <input type="number" id="c_cv_min_energy_j" min="0" max="360"> J</label>
+                <label>Ritmo dopo la conversione <select id="c_cv_post_rhythm"></select></label>
+                <label class="chk"><input type="checkbox" id="c_unsync_shock_vf"> scarica NON sincronizzata su ritmo con polso → FV (R su T)</label></fieldset>
+            </div>
+            <div class="dcfg">
+              <fieldset><legend>Pacing</legend>
+                <label>Soglia di cattura <input type="number" id="c_capture_threshold_ma" min="0" max="200"> mA</label>
+                <label class="chk"><input type="checkbox" id="c_capture_possible"> cattura elettrica possibile</label>
+                <label class="chk"><input type="checkbox" id="c_mechanical_capture"> la cattura genera polso e pressione</label></fieldset>
+              <fieldset><legend>DAE e SYNC</legend>
+                <label>Energia del DAE <input type="number" id="c_aed_energy_j" min="50" max="360"> J</label>
+                <label>RCP tra due analisi <input type="number" id="c_aed_cpr_s" min="30" max="300"> s</label>
+                <label class="chk"><input type="checkbox" id="c_voice_prompts"> istruzioni vocali del DAE</label>
+                <label class="chk"><input type="checkbox" id="c_sync_stays_on"> SYNC resta attivo dopo la scarica</label></fieldset>
+            </div>
+            <div class="row"><button id="defibCfgApply" class="primary">Applica impostazioni</button><small class="hint" id="dcfgHint"></small></div>
+          </div>
+          <div class="card"><h4>Registro eventi <small class="hint">in azzurro: solo istruttore</small></h4><ol class="dlog" id="d_log"></ol></div>
+        </section>
+
+        <section class="pcard flat" id="panel_monitor">
+          <div class="card"><h4>Layout del monitor</h4>
+            <!-- i layout (id e nome) arrivano dal monitor: campo "layouts" dello stato -->
+            <div class="laycats" id="layoutSeg"><!-- ANDROID (categorie dei layout 22/11): gruppi per categoria, li crea app.js -->
+            </div></div>
+          <div class="card"><h4>Audio</h4>
+            <div class="ctl c-mon" id="volCtl"><label>Volume <output id="o_volume"></output> <small>%</small></label>
+              <div class="srow"><input id="volume" type="range" class="tech" min="0" max="100" step="5"></div></div>
+            <button id="beep" class="toggle"></button> <small class="hint">tono del battito legato alla SpO₂</small></div>
+          <!-- ANDROID (affordance 22/11, W-15): scorciatoie da tastiera facoltative (spente di serie; mai in sola osservazione) -->
+          <div class="card"><h4>Questa regia</h4>
+            <label class="chk"><input type="checkbox" id="kbOn"> Scorciatoie da tastiera</label>
+            <p class="hint">P = Pausa / Riprendi · R = RCP · V = Ventila · N = misura NIBP · S = Silenzia · A = ▶ Avvia le modifiche in attesa.
+              Non valgono mentre scrivi in un campo, con una finestra aperta o in sola osservazione.</p></div>
+        </section>
+
+        <section class="pcard flat" id="panel_oxi">
+          <div class="card"><div class="phead"><h4>Saturimetro palmare (iPod touch)</h4><small id="oxiLink" class="hint"></small></div>
+            <p id="oxiStatus" class="hint"></p>
+            <div class="row">
+              <button id="oxiPower" class="toggle"></button>
+              <button id="oxiSensor" class="act"></button>
+              <button id="oxiMute" class="act amber">Silenzia 2 min</button>
+            </div>
+            <p class="hint">Legge lo stesso paziente del monitor: SpO₂, polso, segnale, bassa perfusione, ritardo di comparsa e movimenti valgono anche per lui. Il sensore a dito è indipendente dalla sonda SpO₂ del monitor.</p>
+          </div>
+          <div class="card"><h4>Limiti di allarme del saturimetro</h4>
+            <table class="limits">
+              <thead><tr><th>Parametro</th><th>Min</th><th>Max</th></tr></thead>
+              <tbody>
+                <tr><td>SpO₂ <small>%</small></td><td><input type="number" id="ol_spo2_low" min="20" max="99"></td><td><input type="number" id="ol_spo2_high" min="21" max="100"></td></tr>
+                <tr><td>Polso <small>bpm</small></td><td><input type="number" id="ol_pr_low" min="20" max="240"></td><td><input type="number" id="ol_pr_high" min="25" max="250"></td></tr>
+              </tbody>
+            </table>
+            <div class="row"><button id="oxiLimitsApply" class="primary">Applica limiti</button><button id="oxiLimitsReset" class="ghost">Predefiniti (85–100 · 30–170)</button></div>
+          </div>
+          <div class="card"><h4>Audio del saturimetro</h4>
+            <div class="ctl c-mon" id="oxiVolCtl"><label>Volume allarmi <output id="o_oxiVolume"></output> <small>%</small></label>
+              <div class="srow"><input id="oxiVolume" type="range" class="tech" min="0" max="100" step="5"></div></div>
+            <p class="hint">Il tono del polso si regola sul dispositivo (menu ≡).</p>
+          </div>
+        </section>
+
+        <section class="pcard flat" id="panel_alarms">
+          <div class="card"><h4>Limiti di allarme</h4>
+          <table class="limits">
+            <thead><tr><th>Parametro</th><th>Min</th><th>Max</th><th>Allarme</th></tr></thead>
+            <tbody>
+              <tr><td>FC <small>bpm</small></td><td><input type="number" id="l_hr_low"></td><td><input type="number" id="l_hr_high"></td><td><label><input type="checkbox" id="ae_hr"> attivo</label></td></tr>
+              <tr><td>SpO₂ <small>%</small></td><td><input type="number" id="l_spo2_low"></td><td>—</td><td><label><input type="checkbox" id="ae_spo2"> attivo</label></td></tr>
+              <tr><td>PA sist. <small>mmHg · ART e NIBP</small></td><td><input type="number" id="l_sys_low"></td><td><input type="number" id="l_sys_high"></td><td><label><input type="checkbox" id="ae_art"> ART</label> <label><input type="checkbox" id="ae_nibp"> NIBP</label></td></tr>
+              <tr><td>FR <small>atti/min</small></td><td><input type="number" id="l_rr_low"></td><td><input type="number" id="l_rr_high"></td><td><label><input type="checkbox" id="ae_rr"> attivo</label></td></tr>
+              <tr><td>EtCO₂ <small>mmHg</small></td><td><input type="number" id="l_etco2_low"></td><td><input type="number" id="l_etco2_high"></td><td><label><input type="checkbox" id="ae_etco2"> attivo</label></td></tr>
+            </tbody>
+          </table>
+          <div class="row"><button id="limitsApply" class="primary">Applica limiti</button><button id="limitsReset" class="ghost">Ripristina predefiniti</button></div>
+          </div>
+          <!-- ANDROID (funzioni mancanti 22/11, IN-09/IN-08/IN-16): limiti separati, profili rapidi, ritardi -->
+          <div class="card" id="xlimCard"><h4>Limiti separati <small class="hint">vuoto o 0 = spento</small></h4>
+            <table class="limits">
+              <thead><tr><th>Parametro</th><th>Min</th><th>Max</th></tr></thead>
+              <tbody>
+                <tr><td>ART sistolica <small>mmHg</small></td><td><input type="number" id="x_art_sys_low"></td><td><input type="number" id="x_art_sys_high"></td></tr>
+                <tr><td>NIBP sistolica <small>mmHg</small></td><td><input type="number" id="x_nibp_sys_low"></td><td><input type="number" id="x_nibp_sys_high"></td></tr>
+                <tr><td>ART PAM <small>mmHg</small></td><td><input type="number" id="x_art_map_low" placeholder="spento"></td><td><input type="number" id="x_art_map_high" placeholder="spento"></td></tr>
+                <tr><td>NIBP PAM <small>mmHg</small></td><td><input type="number" id="x_nibp_map_low" placeholder="spento"></td><td><input type="number" id="x_nibp_map_high" placeholder="spento"></td></tr>
+                <tr><td>SpO₂ alta <small>%</small></td><td>—</td><td><input type="number" id="x_spo2_high" placeholder="spento"></td></tr>
+                <tr><td>Temperatura <small>°C (T1 e T2)</small></td><td><input type="number" step="0.1" id="x_temp_low" placeholder="spento"></td><td><input type="number" step="0.1" id="x_temp_high" placeholder="spento"></td></tr>
+              </tbody>
+            </table>
+            <div class="row"><button id="xlimApply" class="primary">Applica limiti separati</button>
+              <span class="olab">Profili</span><button id="profShock" class="ghost" title="PAM ART e NIBP < 65 (Surviving Sepsis 2021)">ICU shock</button>
+              <button id="profRosc" class="ghost" title="SpO₂ 94–98, PAM ≥ 65, temperatura ≤ 37,5 (ERC-ESICM 2021)">Post-ROSC</button></div>
+            <p class="hint" id="xlimHint">ART e NIBP hanno limiti indipendenti; quelli della tabella sopra (PA sist.) valgono per entrambe.</p>
+          </div>
+          <div class="card" id="delayCard"><h4>Ritardi d'allarme <small class="hint">secondi: la condizione deve durare tanto prima di suonare</small></h4>
+            <div class="xgrid" id="delayGrid"></div>
+            <div class="row"><button id="delayApply" class="primary">Applica ritardi</button><button id="delayZero" class="ghost" title="Tutti a 0: si vede che cosa succede senza ritardi (tanti allarmi)">Tutti a 0</button><button id="delayDef" class="ghost">Di serie</button></div>
+          </div>
+        </section>
+
+        <!-- ANDROID (funzioni mancanti 22/11, IN-03/OP-04/IN-13): linea arteriosa, PVC, temperatura centrale -->
+        <section class="pcard flat" id="panel_lines">
+          <div class="card"><div class="phead"><h4>Linea arteriosa</h4><small id="artLineState" class="hint"></small></div>
+            <div class="row"><span class="olab">Smorzamento</span>
+              <span class="seg" id="artDampSeg"><button data-v="optimal">Ottimale</button><button data-v="over">Sovrasmorzata <small>(bolla, coagulo)</small></button><button data-v="under">Sottosmorzata <small>(tubi lunghi)</small></button></span></div>
+            <div class="row"><label class="inline">Trasduttore rispetto all'asse flebostatico <select id="artLevel"></select></label></div>
+            <label class="sw" id="artOcclSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Linea occlusa</b> <small>rubinetto chiuso, coagulo: curva non pulsatile, «ART: VERIFICARE LINEA»</small></span></label>
+            <label class="sw" id="artZeroReqSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Zero obbligatorio</b> <small>dopo il collegamento «---» e «ART: AZZERARE» finché qualcuno non preme Zero</small></span></label>
+            <div class="row"><button id="artZero" class="act">Zero</button><button id="artFlush" class="act">Lavaggio rapido</button>
+              <small class="hint">Zero = 3 s a 0 mmHg (i partecipanti lo fanno anche dal monitor). Lavaggio = onda quadra, poi oscillazioni secondo lo smorzamento.</small></div>
+          </div>
+          <div class="card"><div class="phead"><h4>PVC <small>pressione venosa centrale</small></h4><button id="cvpSensor" class="ghost small"></button></div>
+            <div class="row"><span class="olab">Valore</span><span class="seg" id="cvpPre"><button data-v="2">Ipovolemia 2</button><button data-v="6">Normale 6</button><button data-v="16">Insuff. destra 16</button><button data-v="18">Tamponamento 18</button></span>
+              <input type="number" id="cvpVal" min="0" max="40" style="width:64px"> <small>mmHg</small><button id="cvpGo" class="ghost small">Imposta</button></div>
+            <div class="row"><span class="olab">Forma dell'onda</span><span class="seg" id="cvpWave"><button data-v="normal">a, c, v normali</button><button data-v="large_v">v grande <small>(insuff. tricuspidale)</small></button><button data-v="tamponade">y smussata <small>(tamponamento)</small></button></span></div>
+            <p class="hint" id="cvpNow"></p>
+          </div>
+          <div class="card"><div class="phead"><h4>Temperatura centrale (T2)</h4><button id="t2Sensor" class="ghost small"></button></div>
+            <div class="row"><input type="number" id="t2Val" min="25" max="45" step="0.1" style="width:72px"> <small>°C</small><button id="t2Go" class="ghost small">Imposta</button><small class="hint" id="t2Now"></small></div>
+          </div>
+        </section>
+
+        <!-- ANDROID (funzioni mancanti 22/11, CC-04/AE-12/OP-05): paziente ventilato -->
+        <section class="pcard flat" id="panel_vent">
+          <div class="card"><div class="phead"><h4>Ventilazione</h4><small id="ventState" class="hint"></small></div>
+            <div class="row"><span class="seg big" id="ventMode"><button data-v="spontaneous">Respiro spontaneo</button><button data-v="ventilator">Ventilatore</button><button data-v="bag">Pallone</button></span></div>
+            <div class="row" id="ventSet"><label class="inline">FR <input type="number" id="ventRate" min="4" max="40" style="width:60px"> /min</label>
+              <label class="inline">Volume <input type="number" id="ventTidal" min="200" max="1000" step="10" style="width:72px"> ml</label>
+              <label class="inline">In RCP <select id="ventArrest"><option value="10">10/min (ERC)</option><option value="0">lascia la frequenza</option><option value="6">6/min</option><option value="8">8/min</option><option value="12">12/min</option></select></label>
+              <button id="ventGo" class="primary">Applica</button></div>
+            <label class="sw" id="ventDiscSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Ventilatore scollegato</b> <small>APNEA dopo il ritardo, desaturazione</small></span></label>
+            <label class="sw" id="ventAdvSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Via aerea avanzata</b> <small>col pallone in RCP: insufflazioni automatiche 10/min (compressioni continue)</small></span></label>
+            <div class="row"><span class="olab">PPV</span><span class="seg" id="ppvSeg"><button data-v="auto">Automatica <small>(dalla volemia)</small></button><button data-v="set">Impostata</button></span>
+              <input type="number" id="ppvVal" min="0" max="30" style="width:56px"> <small>%</small></div>
+            <p class="hint">Col ventilatore il capnogramma è regolare e non c'è APNEA; la pressione «respira» con le insufflazioni (PPV che cresce in ipovolemia). Al ROSC torna la frequenza di prima.</p>
+          </div>
+        </section>
+
+        <!-- ANDROID (funzioni mancanti 22/11, IN-10/IN-12/IN-18/AE-08): distrattori -->
+        <section class="pcard flat" id="panel_distr">
+          <div class="card"><h4>Elettrodi ECG</h4>
+            <div class="row"><span class="olab">Un elettrodo staccato</span><span class="seg" id="elSeg"><button data-v="none">Nessuno</button><button data-v="ra">RA</button><button data-v="la">LA</button><button data-v="ll">LL</button><button data-v="v">V</button></span></div>
+            <div class="row"><span class="olab">Tracciato disturbato</span><span class="seg" id="noiseSeg"><button data-v="0">No</button><button data-v="1">Gel secco · 50 Hz</button><button data-v="2">Forte</button></span></div>
+            <label class="sw" id="limbSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Cavi delle braccia invertiti</b> <small>RA/LA: II diventa III</small></span></label>
+          </div>
+          <div class="card"><h4>Allarmi tecnici simulati</h4>
+            <div class="techgrid" id="techGrid"></div>
+            <label class="sw" id="resolvSw"><input type="checkbox"><span class="knob"></span><span class="txt"><b>Risolvibili dai partecipanti</b> <small>un tocco lungo sulla traccia o sulla presa del monitor = «controllo e sistemo»: il registro scrive dopo quanto</small></span></label>
+          </div>
+          <div class="card"><h4>Contatto delle piastre</h4>
+            <div class="row"><span class="seg" id="padsSeg"><button data-v="good">Buono</button><button data-v="marginal">Non ottimale <small>(impedenza alta, scarica erogata)</small></button><button data-v="poor">Scarso <small>(scarica bloccata)</small></button></span></div>
+          </div>
+        </section>
+
+        <!-- ANDROID (funzioni mancanti 22/11, IN-13): esami e bilancio della regia (nel registro, non sul monitor) -->
+        <section class="pcard flat" id="panel_labs">
+          <div class="card"><h4>Esami e bilancio <small class="hint">si dicono a voce o su un referto: qui finiscono nel registro</small></h4>
+            <div class="xgrid" id="labGrid"></div>
+            <div class="row"><button id="labGo" class="primary">Invia al registro</button><small class="hint" id="labNow"></small></div>
+          </div>
+        </section>
+
+        <!-- ANDROID (funzioni mancanti 22/11, IN-14): trend dei numeri a schermo -->
+        <section class="pcard flat" id="panel_trend">
+          <div class="card"><div class="phead"><h4>Trend</h4>
+            <span class="seg" id="trendStep"><button data-v="60">1 min</button><button data-v="300">5 min</button><button data-v="900">15 min</button></span></div>
+            <div id="trendBox"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- paziente in miniatura: un tocco lo espande per piazzare le sonde -->
+      <div id="figBack" hidden></div>
+      <div class="mini" id="miniWrap">
+        <section class="stage" id="stage">
+          <div class="stagehead">
+            <h2>Paziente <small>supino · dalla testa alle ginocchia</small></h2>
+            <p class="hint">Clicca un punto segnato per applicare o spostare il sensore: fronte → temperatura · naso-bocca → capnografia · torace → ECG · sottoclavicola destra e fianco sinistro → piastre · braccio → bracciale · polso o inguine → arteria · dito → SpO₂.</p>
+          </div>
+          <div class="figure" id="figure"></div>
+          <div class="chips" id="chips"></div>
+          <div class="tip" id="tip" hidden></div>
+          <button class="shield" id="miniShield" title="Espandi il paziente per piazzare le sonde con precisione"></button>
+        </section>
+        <button id="figExpand" class="ghost small" title="Espandi il paziente per piazzare le sonde con precisione">Espandi</button>
+        <button id="figClose" class="primary" hidden>Chiudi</button>
+      </div>
+    </main>
+
+    <aside class="rlog">
+      <div class="rhead"><h3>Registro</h3>
+        <button id="logDebrief" class="primary small" title="Riepilogo e storia completa dello scenario, da usare nel debriefing">Debriefing</button>
+        <button id="logStoria" class="ghost small" title="Le simulazioni salvate sul monitor: rivederle, stamparle in PDF, eliminarle">Storia Sim</button>
+        <button id="logSave" class="ghost small" title="Scarica il registro come file di testo">Scarica</button>
+      </div>
+      <!-- ANDROID (debriefing offline web 22/11): simulazioni da inviare al monitor / azzeramento in sospeso -->
+      <p id="offQ" class="offq" hidden></p>
+      <ol class="sesslog" id="sessLog" aria-live="polite"></ol>
+      <div class="rhead sub"><h3>Osservazioni dell'istruttore</h3></div>
+      <div class="ivgrid" id="ivGrid"></div>
+      <div class="row comment">
+        <span id="askKind" class="askkind k-note">Nota</span>
+        <input id="comment" type="text" maxlength="200" placeholder="Annotazione libera…" aria-label="Testo della voce da registrare">
+        <button id="commentAdd" class="primary">Registra</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== barra di regia ===== -->
+  <footer class="regiabar">
+    <span class="clock" id="clock" title="Tempo di scenario (le pause non contano). Riparte all'avvio di uno scenario; con «Azzera» lo azzeri a mano.">00:00</span>
+    <button id="clockReset" class="ghost small" title="Azzera solo l'orologio (parametri e sonde restano)">Azzera</button>
+    <button id="pause" class="act">II Pausa</button>
+    <button id="endScen" class="act endscen" title="Termina la simulazione: «Scenario terminato» sul monitor, pausa, poi il piano di debriefing (sempre con conferma)">■ FINE SCENARIO</button>
+    <div class="timing" id="timing">
+      <div class="trow"><span class="tlab">Applica le modifiche</span>
+        <div class="modes" id="modes">
+          <button data-t="0" class="mode" title="Il valore arriva all'istante (0 s). Sul tablet controller «Subito · 20 s» arriva in 20 s: qui per la stessa cosa scegli «20 s» e poi «▶ Avvia».">Scatto · 0 s</button>
+          <button data-t="10" class="mode">10 s</button>
+          <button data-t="20" class="mode">20 s</button>
+          <button data-t="30" class="mode">30 s</button>
+          <button data-t="60" class="mode">60 s</button>
+          <button data-t="120" class="mode">2 min</button>
+          <label class="custom"><input type="number" id="customT" min="1" max="3600" placeholder="altro"> s</label>
+        </div>
+      </div>
+      <div class="gobar" id="gobar" hidden>
+        <span id="pendSummary"></span>
+        <button id="go" class="yellow">▶ Avvia</button>
+        <button id="pendCancel" class="ghost">Scarta</button>
+      </div>
+      <div class="stopbar" id="stopbar" hidden>
+        <span id="runSummary"></span>
+        <button id="trCancel" class="danger">■ Interrompi</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button id="reset" class="act danger ghost" title="Azzera parametri, sonde, contatori e orologio (con conferma)">Azzera scenario…</button>
+  </footer>
+</div>
+<!-- costruzione di uno scenario a fasi (finestra a tutta altezza) -->
+<div id="scBuilder" class="scb" hidden>
+  <div class="scbbox" role="dialog" aria-modal="true" aria-labelledby="scbTitle">
+    <header class="scbhead">
+      <h2 id="scbTitle">Scenario</h2>
+      <span class="spacer"></span>
+      <button id="scbDup" class="ghost small">Duplica scenario</button>
+      <button id="scbDel" class="ghost small danger">Elimina scenario</button>
+      <button id="scbClose" class="ghost small">Chiudi</button>
+    </header>
+    <div class="scbbody" id="scbBody"></div>
+    <footer class="scbfoot">
+      <p id="scbErr" class="err" role="alert"></p>
+      <span class="spacer"></span>
+      <button id="scbAdd" class="ghost">+ Aggiungi fase</button>
+      <button id="scbSnap" class="ghost" title="Nuova fase con i valori veri che il paziente ha adesso">+ Fase dai valori attuali</button>
+      <button id="scbSave" class="primary">Salva lo scenario</button>
+    </footer>
+  </div>
+</div>
+<!-- Storia Sim: le simulazioni salvate sul monitor (GET /api/v1/archive); aprendone una si vede nel piano di debriefing -->
+<div id="storia" class="scb" hidden>
+  <div class="scbbox stbox" role="dialog" aria-modal="true" aria-labelledby="stTitle">
+    <header class="scbhead">
+      <h2 id="stTitle">Storia Sim</h2>
+      <span class="spacer"></span>
+      <button id="stReload" class="ghost small">Aggiorna</button>
+      <button id="stClose" class="ghost small">Chiudi</button>
+    </header>
+    <div class="scbbody">
+      <p id="stErr" class="err" role="alert"></p>
+      <p class="hint">Le simulazioni salvate chiudendo il piano di debriefing aperto da «FINE SCENARIO» (da qui o dal tablet controller). Aprine una per rivederla, stamparla in PDF o eliminarla.</p>
+      <div class="stlist" id="stList"></div>
+    </div>
+  </div>
+</div>
+<!-- piano di debriefing: riepilogo dei tempi critici + tutta la storia dello scenario (leggibile anche da proiettore) -->
+<div id="debrief" class="scb dbr" hidden>
+  <div class="scbbox dbbox" role="dialog" aria-modal="true" aria-labelledby="dbTitle">
+    <header class="scbhead">
+      <h2 id="dbTitle">Piano di debriefing</h2>
+      <label class="dblive dbsess">Sessione
+        <select id="dbSess" title="Una sessione per ogni simulazione: si apre da sola quando avvii uno scenario o azzeri lo scenario"></select>
+      </label>
+      <span class="spacer"></span>
+      <button id="dbPdf" class="ghost small dbarch" title="Pagina pulita da stampare o salvare come PDF (nella stampa scegli «Salva come PDF»)">PDF</button>
+      <button id="dbDel" class="ghost small danger dbarch" title="Toglie questa simulazione dalla Storia Sim del monitor">Elimina</button>
+      <button id="dbNew" class="dblive ghost small" title="Chiude la sessione in corso e ne apre una nuova; quella chiusa resta nell'elenco">Nuova sessione</button>
+      <button id="dbSave" class="dblive ghost small" title="Scarica la sessione mostrata">Scarica la sessione (.txt)</button>
+      <button id="dbClear" class="dblive ghost small danger" title="Elimina dal monitor tutte le sessioni registrate">Elimina tutte le sessioni</button>
+      <button id="dbClose" class="ghost small">Chiudi</button>
+    </header>
+    <div class="scbbody dbbody">
+      <p id="dbErr" class="err" role="alert"></p>
+      <!-- ANDROID (debriefing offline web 22/11): riga discreta quando il monitor non risponde (il piano resta usabile) -->
+      <p id="dbOff" class="dboff" hidden></p>
+      <p id="dbPastNote" class="dbpast" hidden>Stai guardando una sessione precedente (sola lettura). Per tornare a quella in corso scegli «In corso» nell'elenco.</p>
+      <p id="dbArchNote" class="dbpast" hidden>Simulazione salvata in Storia Sim (sola lettura).</p>
+      <!-- titolo, data e ora, squadra ed esito (bozza nel browser finché non si salva o si scarta) -->
+      <div class="dbmeta" id="dbMeta"></div>
+      <div class="dbtiles" id="dbTiles"></div>
+      <!-- ANDROID (funzioni mancanti 22/11): allarmi (IN-06) e trend (IN-14) della simulazione -->
+      <div class="dbx" id="dbAlarms"></div>
+      <details class="dbx" id="dbTrendBox"><summary>Trend dei parametri</summary><div id="dbTrend"></div></details>
+      <div class="dbfilters" id="dbFilters" role="group" aria-label="Filtra le voci"></div>
+      <ol class="sesslog dblist" id="dbList"></ol>
+    </div>
+  </div>
+</div>
+<!-- ANDROID (sala web 22/11): pannello «Sala» in diretta, non modale (si continua a condurre mentre si guarda).
+     SOLO DIRETTA: niente viene registrato né salvato; sul monitor compare «● IN DIRETTA» finché si guarda o si ascolta. -->
+<div id="sala" class="salapan" hidden role="dialog" aria-labelledby="salaT">
+  <header class="salahead">
+    <h2 id="salaT">Sala in diretta</h2>
+    <span class="spacer"></span>
+    <button id="salaBig" class="ghost small" title="Pannello più grande o più piccolo">Ingrandisci</button>
+    <button id="salaClose" class="ghost small" title="Chiude il pannello e l'immagine; se l'audio è acceso resta acceso">Chiudi</button>
+  </header>
+  <div class="salavid">
+    <canvas id="salaCv" width="640" height="480" aria-label="Immagine in diretta della fotocamera frontale del monitor"></canvas>
+    <p id="salaWait" class="salawait">Collegamento alla fotocamera del monitor…</p>
+    <span id="salaStats" class="salastats" hidden></span>
+  </div>
+  <div id="salaErr" class="salaerr" hidden>
+    <span id="salaErrT"></span>
+    <button id="salaTake" class="primary small" hidden>Prendi il comando</button>
+  </div>
+  <div class="salarow">
+    <button id="salaAudio" title="Ascolta il microfono del monitor (resta acceso anche chiudendo il pannello)">Ascolta</button>
+    <label class="salavol">Volume <input id="salaVol" type="range" class="tech" min="0" max="100" step="5" value="80"> <b id="salaVolT">80 %</b></label>
+    <span class="spacer"></span>
+    <button id="salaQ" class="ghost small" title="Con una rete debole l'immagine più piccola arriva meglio">Qualità: normale</button>
+  </div>
+  <div class="salameter" aria-hidden="true"><i id="salaLvl"></i></div>
+  <small id="salaAudT" class="salaaud">Audio spento: tocca «Ascolta» per sentire la sala</small>
+  <div class="salafoot">
+    <p class="hint">Solo diretta: niente viene registrato né salvato. Sul monitor compare «● IN DIRETTA» finché guardi o ascolti.</p>
+    <button id="salaStop" class="danger small">Chiudi la sala</button>
+  </div>
+</div>
+<!-- ANDROID (pannello RCP 22/11): «Come vedi l'RCP?» — non modale (si continua a condurre), si apre toccando «▶ RCP»
+     (che avvia la RCP) o «● RCP in corso» (che NON la ferma); la RCP si ferma solo con «Interrompi RCP». Mostra i valori VERI
+     dello stato del monitor (cpr_rate_cpm, cpr_*_quality, cpr_fatigue, etco2_cpr_mode). -->
+<div id="rcp" class="rcppan" hidden role="dialog" aria-labelledby="rcpT">
+  <header class="salahead">
+    <h2 id="rcpT">Come vedi l'RCP?</h2>
+    <span id="rcpState" class="rcpstate"></span>
+    <span class="spacer"></span>
+    <button id="rcpClose" class="ghost small" title="Chiude il pannello (Esc): la RCP continua">Chiudi</button>
+  </header>
+  <p id="rcpObs" class="rcpobs" hidden>Solo osservazione: comanda un altro controller. Qui vedi i valori, ma non puoi cambiarli.</p>
+  <div class="rcpsec">
+    <div class="rcplab">Frequenza <b id="rcpRateT" class="rcprate">--</b></div>
+    <input id="rcpRate" type="range" min="60" max="160" step="1" value="110" aria-label="Frequenza delle compressioni al minuto">
+    <button id="rcpTap" class="rcptap" title="Tocca (o premi la barra spaziatrice) a ogni compressione che vedi: dopo 5 tocchi la frequenza si imposta da sola">Batti il tempo</button>
+    <small id="rcpTapT" class="rcptapt">Tocca a ogni compressione che vedi (anche barra spaziatrice).</small>
+  </div>
+  <div class="rcpsec">
+    <div class="rcprow"><span class="rcplab">Profondità</span>
+      <span class="seg rcpseg" id="rcpDepth"><button data-v="shallow">Superficiale</button><button data-v="ok">Corretta</button><button data-v="deep">Troppo profonda</button></span></div>
+    <div class="rcprow"><span class="rcplab">Rilascio</span>
+      <span class="seg rcpseg" id="rcpRecoil"><button data-v="ok">Completo</button><button data-v="incomplete">Incompleto</button></span></div>
+    <div class="rcprow"><span class="rcplab">Posizione delle mani</span>
+      <span class="seg rcpseg" id="rcpHands"><button data-v="ok">Corretta</button><button data-v="wrong">Scorretta</button></span></div>
+  </div>
+  <div class="rcpsec rcprow">
+    <span class="rcpfat"><span class="rcplab">Stanchezza di chi comprime</span><span class="rcpbar" aria-hidden="true"><i id="rcpFatBar"></i></span><small id="rcpFatT"></small></span>
+    <button id="rcpSwap" title="Il soccorritore alle compressioni è stato cambiato: la stanchezza ripart da zero">Cambio operatore</button>
+  </div>
+  <p id="rcpEff" class="rcpeff"></p>
+  <div id="rcpMan" class="rcpman" hidden><span>EtCO₂ impostata a mano: la qualità della RCP non la cambia.</span>
+    <button id="rcpModel" class="small" title="L'EtCO₂ torna a seguire la qualità della RCP (modello del monitor)">Torna al modello</button></div>
+  <button id="rcpStop" class="rcpstop">Interrompi RCP</button>
+</div>
+<!-- finestra di conferma in pagina (FINE SCENARIO, chiusura del debriefing, eliminazione) -->
+<div id="sfDlg" class="sfdlg" hidden>
+  <div class="sfdlgbox" role="alertdialog" aria-modal="true" aria-labelledby="sfDlgT" aria-describedby="sfDlgX">
+    <h2 id="sfDlgT"></h2>
+    <p id="sfDlgX"></p>
+    <div class="sfdlgbtn" id="sfDlgB"></div>
+  </div>
+</div>
+<script>
+  // solo computer: telefoni e tablet (iPad compresi, anche quando si presentano come Mac) vedono solo l'avviso.
+  // Un computer con schermo touch ha anche mouse/trackpad ("any-pointer: fine") e resta ammesso.
+  window.SF_PHONE = (function () {
+    var ua = navigator.userAgent || '', mm = function (q) { return window.matchMedia && matchMedia(q).matches; };
+    if (/iPhone|iPad|iPod|Android|Mobile|Silk|Kindle/i.test(ua)) return true;
+    if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return true;          // iPad con iPadOS 13+
+    return mm('(pointer: coarse)') && !mm('(any-pointer: fine)');
+  })();
+  if (window.SF_PHONE) { document.getElementById('phoneOnly').hidden = false; document.getElementById('login').hidden = true; }
+</script>
+<script src="/app.js"></script>
+</body>
+</html>

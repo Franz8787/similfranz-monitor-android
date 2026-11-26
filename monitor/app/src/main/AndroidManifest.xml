@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- server HTTP locale e Bonjour -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- vibrazione a ogni scarica erogata -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- pagina «Reti Wi-Fi»: elenco, collegamento, password (SFWifi) -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- ANDROID (audit 26/11, BUG-A1): WifiLock ad alte prestazioni finché il server è acceso (anche a schermo spento) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Android 9 lo richiede (a runtime) per leggere l'elenco delle reti Wi-Fi -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- ANDROID (sala 22/11): «Sala» in diretta per il controller (fotocamera frontale + microfono, niente salvato) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <!-- ANDROID (audit 26/11, PUL-F11): il permesso CAMERA implica la fotocamera posteriore: non è richiesta -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <application
+        android:label="@string/app_name_long"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <!-- ANDROID (audit 26/11, BUG-A2): configChanges completo: base, SIM, lingua o carattere non ricreano l'attività durante una sessione -->
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection|mcc|mnc">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- verifica dal Mac: adb shell am start -a android.intent.action.VIEW -d "simulafranz-monitor://selftest" -->
+            <!-- ANDROID (audit 26/11, PUL-F1/F2): niente BROWSABLE (un link nel browser non apre l'app); i comandi funzionano solo nelle build di prova -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="simulafranz-monitor" />
+            </intent-filter>
+        </activity>
+        <!-- icona «Blocca schermo» sulla Home: spegne lo schermo (il tasto di accensione è dietro lo sportellino del guscio) -->
+        <activity
+            android:name=".SFBloccaActivity"
+            android:label="@string/blocca_schermo"
+            android:icon="@mipmap/ic_blocca"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="it.simulafranz.monitor.blocca"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver
+            android:name=".SFBloccaAdmin"
+            android:exported="true"
+            android:label="@string/blocca_schermo"
+            android:description="@string/blocca_schermo_desc"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data android:name="android.app.device_admin" android:resource="@xml/blocca_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+        <!-- tasto Home con due pressioni mentre il monitor è a schermo (va attivato in Impostazioni › Accessibilità) -->
+        <service
+            android:name=".SFTastiService"
+            android:exported="true"
+            android:label="@string/doppio_home"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/tasti_service" />
+        </service>
+    </application>
+</manifest>

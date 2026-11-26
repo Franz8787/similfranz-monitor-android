@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- API del monitor (HTTP) sulla rete Wi-Fi Direct creata dal monitor -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ANDROID (affordance 22/11, CTL-15): risposta tattile ai comandi -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- ricerca dei monitor (Wi-Fi Direct) e collegamento alla loro rete, tutto dall'app -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- Android 9 lo richiede (a runtime) per la ricerca Wi-Fi Direct -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.wifi.direct" android:required="false" />
+    <!-- ANDROID (storia sim 22/11): PDF delle simulazioni salvate in /sdcard/Documents/Storia Sim (targetSdk 28) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- ANDROID (audit 26/11, PUL-F10): l'icona «Storia Sim» usa ShortcutManager (API 26): niente INSTALL_SHORTCUT -->
+    <application
+        android:label="@string/app_name_long"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+        <!-- ANDROID (audit 26/11, BUG-A2): configChanges completo: base, SIM, lingua o carattere non ricreano l'attività durante una sessione -->
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustNothing"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection|mcc|mnc">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- verifica dal Mac: adb shell am start -a android.intent.action.VIEW -d "simulafranz-controller://…" -->
+            <!-- ANDROID (audit 26/11, PUL-F1/F2): niente BROWSABLE (un link nel browser non apre l'app); i comandi funzionano solo nelle build di prova -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="simulafranz-controller" />
+            </intent-filter>
+        </activity>
+        <!-- ANDROID (storia sim 22/11): cartella «Storia Sim» sulla schermata Home: elenco dei PDF, visore, Condividi.
+             Icona e compito propri (taskAffinity), così dalla Home non si apre la regia. -->
+        <activity
+            android:name=".StoriaSimActivity"
+            android:label="Storia Sim"
+            android:icon="@mipmap/ic_storia"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="it.simulafranz.controller.storia"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection|mcc|mnc">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- PDF della Storia Sim in sola lettura per «Condividi» (senza AndroidX: niente FileProvider) -->
+        <provider
+            android:name=".StoriaPdfProvider"
+            android:authorities="it.simulafranz.controller.storia"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

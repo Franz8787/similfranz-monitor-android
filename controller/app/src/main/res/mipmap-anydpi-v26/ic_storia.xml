@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ANDROID (storia sim 22/11): icona «Storia Sim» (cartella con un documento e una traccia ECG), diversa da quella del controller -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_storia_bg" />
+    <foreground android:drawable="@drawable/ic_storia_fg" />
+</adaptive-icon>

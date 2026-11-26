@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "Se usi questo progetto in un corso, un poster o un articolo, citalo così. / If you use this project, please cite it as below."
+type: software
+title: "similFranz Monitor per Android: simulatore di monitor-defibrillatore guidato dal facilitatore, su tablet riutilizzati, per la simulazione sanitaria"
+abstract: >-
+  Simulatore open source di monitor-defibrillatore per la simulazione sanitaria, guidato dal facilitatore, su due tablet
+  Android riutilizzati: uno è il dispositivo dei partecipanti, l'altro la regia. Segnali visibili solo con il sensore
+  applicato (fedeltà funzionale), transizioni temporizzate, scenari a fasi allineati agli obiettivi di apprendimento,
+  esito delle scariche deciso dal facilitatore, registro con marcatura temporale e piano di debriefing con gli
+  intervalli delle azioni critiche. Collegamento diretto fra i tablet, senza rete, adatto alla simulazione in situ.
+  Non ancora oggetto di studi di validazione. Non è un dispositivo medico.
+authors:
+  - given-names: Francesco
+    family-names: Palmisano
+    alias: ilFranz
+    orcid: "https://orcid.org/0009-0009-9368-0212"
+version: 0.1.0
+license: GPL-3.0-only
+repository-code: "https://github.com/Franz8787/similfranz-monitor-android"
+url: "https://franz8787.github.io/similfranz-monitor-android/"
+keywords:
+  - healthcare simulation
+  - simulation-based education
+  - in situ simulation
+  - functional fidelity
+  - instructor-driven simulation
+  - debriefing
+  - simulated patient monitor
+  - defibrillation training
+  - low-cost simulation
+  - device reuse
+  - Android

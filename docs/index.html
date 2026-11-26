@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>similFranz Monitor Android</title>
+<meta name="description" content="Due tablet rugged Samsung® Galaxy® Tab Active2 diventano un monitor-defibrillatore da simulazione e la sua regia. Progetto open source per la simulazione sanitaria.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Una sola gerarchia, ripetuta: occhiello · titolo · testo introduttivo, poi UN solo schema per sezione
+   (immagine+testo affiancati, griglia regolare, passi numerati). Fasce chiare alternate a fasce «sala»
+   (il nero-blu dello schermo del monitor). Accenti: verde ECG, azzurro SpO2, ambra degli allarmi. */
+:root {
+  --bg: #f3f6f7; --surface: #ffffff; --ink: #0d1a21; --ink-2: #33464f; --muted: #5a6d76; --line: #dbe3e6;
+  --room: #071015; --room-2: #0c1a21; --room-ink: #e8f1f4; --room-muted: #93aab4; --room-line: #1b2f38;
+  --ecg: #0f8a45; --ecg-screen: #3cff6e; --spo2: #0a86a6; --spo2-screen: #55dcff; --alarm: #e0a000; --regia: #0a7cff;
+  --radius: 16px; --max: 1160px;
+  --font-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1419; --surface: #0f1d24; --ink: #e6eff2; --ink-2: #c3d2d8; --muted: #9bb0b9; --line: #20363f;
+    --room: #04090c; --room-2: #0a161c; --ecg: #3fcf88; --spo2: #4fd0ec; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1419; --surface: #0f1d24; --ink: #e6eff2; --ink-2: #c3d2d8; --muted: #9bb0b9; --line: #20363f;
+  --room: #04090c; --room-2: #0a161c; --ecg: #3fcf88; --spo2: #4fd0ec; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.65 var(--font-body); }
+a { color: var(--spo2); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--spo2); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.06; text-wrap: balance; margin: 0; letter-spacing: -0.015em; }
+h1 { font-size: clamp(2.4rem, 5.4vw, 4.1rem); font-weight: 700; }
+h2 { font-size: clamp(1.9rem, 3.6vw, 2.9rem); font-weight: 700; }
+h3 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.005em; }
+p { margin: 0; }
+img, video { max-width: 100%; height: auto; display: block; }
+b { font-weight: 700; }
+
+/* ---------- impalcatura ---------- */
+.band { padding: clamp(64px, 9vw, 120px) max(16px, env(safe-area-inset-left, 0px)); }
+.band.flush-top { padding-top: 0; }
+.container { max-width: var(--max); margin: 0 auto; }
+.room { background: var(--room); color: var(--room-ink); }
+.room.alt { background: var(--room-2); }
+.paper { background: var(--surface); }
+.head { display: grid; gap: 16px; max-width: 760px; margin-bottom: clamp(36px, 5vw, 56px); }
+.head .lead, .head h2 { max-width: none; }
+.head.center h2, .head.center .lead { width: 100%; }
+.note, .callout { max-width: 760px; }
+.head.center { margin-inline: auto; text-align: center; justify-items: center; }
+.eyebrow { font: 700 0.76rem/1 var(--font-data); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ecg); display: inline-flex; gap: 10px; align-items: center; }
+.eyebrow::before { content: ""; width: 22px; height: 2px; background: currentColor; }
+.head.center .eyebrow::before { display: none; }
+.room .eyebrow { color: var(--ecg-screen); }
+.lead { font-size: clamp(1.1rem, 1.5vw, 1.28rem); line-height: 1.6; color: var(--ink-2); max-width: 66ch; }
+.room .lead { color: var(--room-muted); }
+.note { font-size: 0.95rem; color: var(--muted); max-width: 760px; }
+.room .note { color: var(--room-muted); }
+.room a { color: var(--spo2-screen); }
+.more { font: 600 1rem/1 var(--font-display); text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
+.more::after { content: "→"; transition: transform .15s; }
+.more:hover::after { transform: translateX(3px); }
+
+/* ---------- navigazione ---------- */
+.nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--room) 88%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--room-line); }
+.nav .container { display: flex; align-items: center; gap: 24px; height: 60px; padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.brand { font: 700 1.05rem/1 var(--font-display); color: var(--room-ink); text-decoration: none; display: inline-flex; gap: 10px; align-items: center; white-space: nowrap; }
+.brand i { width: 9px; height: 9px; border-radius: 50%; background: var(--ecg-screen); box-shadow: 0 0 12px var(--ecg-screen); }
+.brand small { font: 500 0.78rem/1 var(--font-data); color: var(--room-muted); letter-spacing: 0.06em; }
+.nav ul { list-style: none; margin: 0 0 0 auto; padding: 0; display: flex; gap: 4px; }
+.nav ul a { color: var(--room-muted); text-decoration: none; font: 600 0.92rem/1 var(--font-display); padding: 9px 11px; border-radius: 8px; }
+.nav ul a:hover { color: var(--room-ink); background: rgba(255,255,255,.06); }
+.nav .cta { background: var(--ecg-screen); color: #04140a; font: 700 0.92rem/1 var(--font-display); padding: 10px 16px; border-radius: 999px; text-decoration: none; white-space: nowrap; }
+@media (max-width: 980px) { .nav ul { display: none; } .nav .cta { margin-left: auto; } }
+
+/* ---------- pulsanti ---------- */
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 22px; border-radius: 999px; font: 700 1rem/1 var(--font-display); text-decoration: none; border: 1.5px solid rgba(255,255,255,.22); color: var(--room-ink); }
+.room a.btn { color: var(--room-ink); }
+.btn.primary, .room a.btn.primary { background: var(--ecg-screen); border-color: var(--ecg-screen); color: #04140a; }
+.btn:hover { transform: translateY(-1px); }
+.btn.soon { border-style: dashed; color: var(--room-muted); cursor: default; }
+.btn.soon:hover { transform: none; }
+
+/* ---------- apertura: centrata, immagine grande sotto ---------- */
+.hero { padding-top: clamp(56px, 8vw, 104px); padding-bottom: 0; overflow: hidden; }
+.hero-copy { display: grid; gap: 26px; justify-items: center; text-align: center; max-width: 760px; margin: 0 auto; }
+.hero h1 { font-size: clamp(2.5rem, 5.4vw, 4.4rem); max-width: 22ch; }
+.hero .eyebrow::before { display: none; }
+.hero h1 em { font-style: normal; color: var(--ecg-screen); }
+.hero .lead { color: #b9cad1; max-width: 62ch; }
+.hero .ctas { justify-content: center; }
+.safety { font-size: 0.95rem; color: var(--room-muted); max-width: 60ch; }
+.safety::before { content: "●"; color: var(--alarm); margin-right: 8px; }
+.hero-shot { margin: clamp(40px, 6vw, 72px) auto 0; max-width: var(--max); position: relative; }
+.hero-shot img { width: 100%; border-radius: 22px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06); }
+.facts { margin-top: clamp(48px, 7vw, 88px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--room-line); }
+.facts div { padding: 28px 24px 32px; display: grid; gap: 8px; text-align: center; justify-items: center; }
+.facts div + div { border-left: 1px solid var(--room-line); }
+.facts b { font: 700 clamp(1.7rem, 2.6vw, 2.2rem)/1 var(--font-display); color: var(--room-ink); letter-spacing: -0.02em; }
+.facts span { color: var(--room-muted); font-size: 0.95rem; line-height: 1.45; max-width: 24ch; }
+
+/* ---------- immagini: un solo trattamento ---------- */
+.shot { margin: 0; display: grid; gap: 12px; }
+.shot .frame { border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: 0 24px 48px -28px rgba(6, 22, 30, .55), 0 0 0 1px rgba(13, 26, 33, .08); }
+.room .shot .frame { box-shadow: 0 30px 60px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.07); }
+.shot .frame img, .shot .frame video { width: 100%; }
+.shot .frame.screen img { aspect-ratio: 16 / 10; object-fit: cover; }
+.shot figcaption { font-size: 0.93rem; line-height: 1.5; color: var(--muted); }
+.shot figcaption b { color: var(--ink); font-weight: 700; }
+.room .shot figcaption { color: var(--room-muted); }
+.room .shot figcaption b { color: var(--room-ink); }
+
+/* ---------- schemi ---------- */
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 64px); align-items: center; }
+.split.rev > :first-child { order: 2; }
+.split + .split { margin-top: clamp(56px, 7vw, 96px); }
+.stack { display: grid; gap: 20px; align-content: start; }
+.g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 3vw, 32px); }
+.g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 24px); }
+.g4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 24px); }
+.gap-top { margin-top: clamp(40px, 5vw, 64px) !important; }
+
+/* elenco di funzioni: titolo + testo, una riga sottile fra le voci */
+.feats { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.feats li { display: grid; gap: 6px; padding: 18px 0; border-top: 1px solid var(--line); align-content: start; }
+.feats li:last-child { border-bottom: 1px solid var(--line); }
+.room .feats li { border-color: var(--room-line); }
+.feats h3 { font-size: 1.12rem; }
+.feats p { color: var(--muted); font-size: 1rem; }
+.room .feats p { color: var(--room-muted); }
+
+.feats.row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 clamp(20px, 3vw, 40px); }
+.feats.row3 li { border-bottom: 1px solid var(--line); }
+.room .feats.row3 li { border-color: var(--room-line); }
+@media (max-width: 900px) { .feats.row3 { grid-template-columns: 1fr; } .feats.row3 li + li { border-top: 0; } }
+.sub { display: grid; gap: 10px; margin: clamp(48px, 6vw, 80px) 0 24px; max-width: 760px; }
+.sub h3 { font-size: clamp(1.5rem, 2.4vw, 2rem); }
+/* schede: tutte uguali, altezza uniforme */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 10px; align-content: start; }
+.paper .card { background: var(--bg); }
+.room .card { background: rgba(255,255,255,.035); border-color: var(--room-line); }
+.card p { color: var(--muted); font-size: 1rem; }
+.room .card p { color: var(--room-muted); }
+.tag { font: 700 0.7rem/1 var(--font-data); letter-spacing: 0.14em; text-transform: uppercase; color: var(--spo2); }
+.room .tag { color: var(--spo2-screen); }
+
+/* passi numerati */
+.steps { counter-reset: s; }
+.steps .card { counter-increment: s; }
+.steps .card::before { content: counter(s, decimal-leading-zero); font: 700 0.95rem/1 var(--font-data); color: var(--ecg); letter-spacing: 0.08em; }
+.room .steps .card::before { color: var(--ecg-screen); }
+.steps ul, .steps ol { margin: 0; padding-left: 1.1em; color: var(--muted); font-size: 1rem; display: grid; gap: 7px; }
+.steps b { color: var(--ink); }
+kbd { font: 700 0.82em/1 var(--font-data); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 2px 6px; color: var(--ink); white-space: nowrap; }
+
+/* ciclo della simulazione: tre tappe collegate */
+.cycle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative; }
+.cycle > div { padding: 0 28px 0 0; display: grid; gap: 10px; align-content: start; }
+.cycle > div::before { content: ""; display: block; height: 2px; background: linear-gradient(90deg, var(--ecg-screen), transparent); margin-bottom: 18px; }
+.cycle p { color: var(--room-muted); }
+
+/* registro */
+.log { font: 500 0.95rem/1.5 var(--font-data); background: var(--room); color: var(--room-ink); border-radius: var(--radius); padding: 22px 24px; display: grid; gap: 8px; overflow-x: auto; box-shadow: 0 24px 48px -28px rgba(6,22,30,.55); }
+.log div { display: grid; grid-template-columns: 4.2em 8.6em 1fr; gap: 12px; white-space: nowrap; align-items: center; }
+.log b { font-weight: 700; }
+.log i { font-style: normal; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 5px; padding: 1px 6px; justify-self: start; }
+.k-act { color: var(--ecg-screen); } .k-el { color: #ff9f1a; } .k-pt { color: var(--room-muted); } .k-dr { color: #cc9eff; }
+.big-num { display: grid; gap: 4px; }
+.big-num b { font: 700 clamp(2.4rem, 4.4vw, 3.4rem)/1 var(--font-display); letter-spacing: -0.03em; color: var(--ecg); }
+.room .big-num b { color: var(--ecg-screen); }
+.big-num span { color: var(--muted); font-size: 0.98rem; }
+.room .big-num span { color: var(--room-muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chips span { border: 1px solid var(--room-line); border-radius: 999px; padding: 9px 14px; font-size: 0.93rem; color: var(--room-ink); background: rgba(255,255,255,.03); }
+.callout { border-left: 3px solid var(--alarm); padding: 4px 0 4px 16px; color: var(--muted); font-size: 0.95rem; max-width: 760px; }
+.room .callout { color: var(--room-muted); }
+
+footer { background: var(--room); color: var(--room-muted); padding: 64px max(16px, env(safe-area-inset-left, 0px)) 48px; font-size: 0.9rem; line-height: 1.6; }
+footer .cols { column-count: 2; column-gap: 48px; }
+footer .cols p { break-inside: avoid; margin-bottom: 18px; }
+footer b { color: var(--room-ink); }
+footer a { color: var(--spo2-screen); }
+footer .sign { margin-top: 36px; padding-top: 22px; border-top: 1px solid var(--room-line); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .hero-grid, .split, .g2 { grid-template-columns: 1fr; }
+  .split.rev > :first-child { order: 0; }
+  .g3, .g4, .cycle { grid-template-columns: 1fr 1fr; }
+  .facts { grid-template-columns: 1fr 1fr; }
+  .facts div:nth-child(3) { border-left: 0; }
+  .facts div:nth-child(n+3) { border-top: 1px solid var(--room-line); }
+  footer .cols { column-count: 1; }
+}
+@media (max-width: 600px) {
+  .g3, .g4, .cycle { grid-template-columns: 1fr; }
+  .cycle > div { padding: 0 0 26px; }
+  .log div { grid-template-columns: 4.2em 1fr; } .log i { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Sezioni">
+  <div class="container">
+    <a class="brand" href="#top"><i></i>similFranz <small>MONITOR ANDROID</small></a>
+    <ul>
+      <li><a href="#monitor">Monitor</a></li>
+      <li><a href="#controller">Regia</a></li>
+      <li><a href="#videotutorial">Video</a></li>
+      <li><a href="#debriefing">Debriefing</a></li>
+      <li><a href="#guscio">Guscio</a></li>
+      <li><a href="#guida">Guida</a></li>
+    </ul>
+    <a class="cta" href="#come">Inizia</a>
+  </div>
+</nav>
+
+<!-- ================= APERTURA ================= -->
+<header class="band room hero" id="top">
+  <div class="container">
+    <div class="hero-copy">
+      <span class="eyebrow">Simulazione sanitaria · open source</span>
+      <h1>Quel tablet rugged in fondo all'armadio ha ancora <em>un turno da fare</em>.</h1>
+      <p class="lead">Un Samsung® Galaxy® Tab Active2 diventa il monitor-defibrillatore che i partecipanti usano davvero. Un secondo tablet diventa la tua regia: conduci lo scenario e raccogli i fatti per il debriefing.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#come">Inizia in tre passi</a>
+        <a class="btn" href="#insieme">Guardalo in azione</a>
+        <span class="btn soon" title="Il DOI Zenodo arriva con la prima versione pubblica">DOI in arrivo</span>
+      </div>
+      <p class="safety">Solo per la simulazione sanitaria: non è un dispositivo medico, non misura e non eroga nulla.</p>
+    </div>
+    <figure class="hero-shot"><img src="img/hero_monitor_controller.jpg" alt="Il monitor similFranz su Galaxy Tab Active2 nel guscio stampato in 3D, con davanti il tablet di regia"></figure>
+    <div class="facts">
+      <div><b>2 tablet</b><span>il monitor per i partecipanti, la regia per te</span></div>
+      <div><b>Offline</b><span>Wi-Fi Direct® fra i tablet, senza account</span></div>
+      <div><b>1000+</b><span>controlli automatici sul simulatore</span></div>
+      <div><b>Open</b><span>codice GPL-3.0, guscio CC BY-NC 4.0</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= IN AZIONE ================= -->
+<section class="band room" id="insieme">
+  <div class="container">
+    <div class="head center">
+      <span class="eyebrow">Monitor e regia insieme</span>
+      <h2>Tu tocchi il controller, il paziente risponde.</h2>
+      <p class="lead">Alzi la frequenza, abbassi la pressione, cambi il ritmo: in sala il monitor si trasforma sotto gli occhi dei partecipanti, con gradualità o di colpo.</p>
+    </div>
+    <figure class="shot">
+      <div class="frame"><video src="img/insieme_video.mp4" poster="img/insieme_video_poster.jpg" controls muted playsinline preload="none" aria-label="Controller e monitor affiancati: primo collegamento, accensione, sonde, frequenza che sale, arresto in fibrillazione ventricolare, scarica, ROSC e piano di debriefing"></video></div>
+      <figcaption><b>Dal primo collegamento al debriefing in due minuti.</b> A sinistra il controller dell'istruttore, a destra il monitor dei partecipanti (layout extraH).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= MONITOR ================= -->
+<section class="band" id="monitor">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Il monitor</span>
+      <h2>Si comporta come quello vero, anche nei momenti difficili.</h2>
+      <p class="lead">È il tablet che vedono e toccano i partecipanti. La NIBP si gonfia e misura, gli allarmi suonano con la loro priorità, in arresto la saturazione sparisce e l'EtCO₂ racconta la qualità della RCP. Il defibrillatore carica, scarica, sincronizza e fa pacing.</p>
+    </div>
+    <div class="g2">
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_extrah.png" alt="Layout extraH: monitor-defibrillatore da emergenza territoriale" loading="lazy"></div><figcaption><b>extraH</b> · monitor-defibrillatore da emergenza territoriale</figcaption></figure>
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_icu.png" alt="Layout ICU in fibrillazione ventricolare: ECG, pletismografia, pressione arteriosa, capnografia" loading="lazy"></div><figcaption><b>ICU</b> · terapia intensiva con defibrillatore a scomparsa</figcaption></figure>
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_dae.png" alt="Layout DAE: defibrillatore semiautomatico con istruzioni a schermo" loading="lazy"></div><figcaption><b>DAE</b> · semiautomatico con voce guida</figcaption></figure>
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_ecg12.jpg" alt="Carta dell'ECG a 12 derivazioni su extraH, con misure, referto automatico e tasto Trasmetti" loading="lazy"></div><figcaption><b>ECG a 12 derivazioni</b> · con trasmissione simulata alla Centrale Operativa</figcaption></figure>
+    </div>
+    <p class="note" style="margin-top: 28px">Tre layout originali, disegnati per questo progetto. La categoria <b>Personalizzati</b> aspetta i frontali che crei tu per il tuo centro: <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/layout-personalizzati.md">la guida</a> ti accompagna passo per passo.</p>
+
+    <div class="sub"><span class="eyebrow">In mano</span><h3>Si usa come un defibrillatore, non come un tablet.</h3></div>
+    <ul class="feats row3">
+      <li><h3>Accensione, carica e scarica</h3><p>I tre tasti fisici del tablet diventano ACCENSIONE, CARICA e SCARICA su tutti i layout, e animano quelli a schermo.</p></li>
+      <li><h3>La scarica si sente in mano</h3><p>A ogni scarica lo scatto dei relè e una vibrazione decisa; nel pacing una vibrazione lieve a ogni impulso.</p></li>
+      <li><h3>Nessuno esce per sbaglio</h3><p>Per la Home servono tre pressioni; schermo e volume si comandano dal menu, a sportello chiuso.</p></li>
+    </ul>
+    <figure class="shot gap-top"><div class="frame"><img src="img/tasti_fisici.jpg" alt="I tre tasti fisici del tablet nel guscio: accensione in alto, carica al centro, scarica in basso" loading="lazy"></div><figcaption><b>Tre tasti</b> · accensione in alto, carica al centro, scarica in basso</figcaption></figure>
+    <div class="g2 gap-top">
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_avviso.jpg" alt="Sul monitor l'avviso rosso «Premi ancora Home per uscire dal monitor»" loading="lazy"></div><figcaption><b>Uscita protetta</b> · un avviso rosso prima di uscire</figcaption></figure>
+      <figure class="shot"><div class="frame screen"><img src="img/monitor_menu.jpg" alt="Il menu del monitor con il volume del tablet e la voce Spegni lo schermo" loading="lazy"></div><figcaption><b>Menu ☰</b> · volume del tablet e «Spegni lo schermo»</figcaption></figure>
+    </div>
+    <p style="margin-top: 28px"><a class="more" href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/monitor.md">Guida completa al monitor</a></p>
+  </div>
+</section>
+
+<!-- ================= REGIA ================= -->
+<section class="band paper" id="controller">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow" style="color: var(--regia)">La regia</span>
+      <h2>Lo scenario nel palmo della mano.</h2>
+      <p class="lead">Il secondo tablet è il tuo. In alto i valori veri del paziente, sotto tutto quello che serve per guidare lo scenario. Lo usi in piedi, con una mano, anche con i guanti, mentre lo sguardo resta sul gruppo.</p>
+    </div>
+    <figure class="shot"><div class="frame"><img src="img/controller_regia.jpg" alt="Il controller: tessere con i valori veri in alto, ritmo e frequenza al centro, sonde e azioni a destra, stati del paziente a sinistra" loading="lazy"></div><figcaption><b>Il controller</b> · valori veri in alto, regolazione al centro, sonde e azioni a destra</figcaption></figure>
+    <ul class="feats row3 gap-top">
+      <li><h3>Collegati ovunque</h3><p>Wi-Fi Direct® fra i due tablet: scegli il monitor, scrivi il PIN, sei in scenario. In palestra, in ambulanza, in un prato.</p></li>
+      <li><h3>Subito, o in un minuto</h3><p>Tocchi una tessera e regoli il valore. Con «Prepara» cambi più parametri e li fai partire insieme.</p></li>
+      <li><h3>Le sonde le applichi tu</h3><p>Vedi applicare elettrodi, saturimetro, bracciale o piastre? Un tocco, e il monitor li legge.</p></li>
+    </ul>
+    <div class="g2 gap-top">
+      <div class="card"><span class="tag">Scenari a fasi</span><h3>Lo conduci tu</h3><p>Le fasi le prepari prima; in sala passi alla successiva quando decidi tu, con la tua nota.</p></div>
+      <div class="card"><span class="tag">Arresto</span><h3>RCP, ventilazione, esito</h3><p>Qualità delle compressioni e stanchezza di chi comprime; dopo ogni scarica scegli tu che cosa succede.</p></div>
+      <div class="card"><span class="tag">A distanza</span><h3>Il volume dalla regia</h3><p>Alzi o abbassi il monitor senza entrare in sala; a ogni scarica il controller vibra.</p></div>
+      <div class="card"><span class="tag">Centrale Operativa</span><h3>La trasmissione arriva a te</h3><p>Quando i partecipanti trasmettono l'ECG a 12 derivazioni, rispondi tu come centrale: la risposta compare sul monitor.</p></div>
+    </div>
+    <p style="margin-top: 28px"><a class="more" href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/controller.md">Guida completa al controller</a></p>
+  </div>
+</section>
+
+<!-- ================= REGIA WEB E SALA ================= -->
+<section class="band room" id="regia-web">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Regia web e Sala in diretta</span>
+      <h2>Tutto lo scenario sul grande schermo, anche da un'altra stanza.</h2>
+      <p class="lead">Il monitor serve da sé la regia web: computer e tablet sulla stessa rete Wi-Fi®, scrivi l'indirizzo che il monitor ti mostra e il PIN. Nessuna installazione.</p>
+    </div>
+    <figure class="shot"><div class="frame"><img src="img/regia_web.jpg" alt="La regia web: valori veri in alto, ritmo e frequenza al centro, stati del paziente a sinistra, registro e osservazioni a destra, figura del paziente per le sonde" loading="lazy"></div><figcaption><b>La regia web</b> · parametri, scenari, defibrillatore e figura del paziente, con il registro sempre a destra</figcaption></figure>
+    <div class="g3 gap-top">
+      <div class="card"><span class="tag">Due facilitatori</span><h3>Un solo registro</h3><p>Uno conduce dal tablet, l'altro osserva e annota dal computer.</p></div>
+      <div class="card"><span class="tag">Sala in diretta</span><h3>Vedi e senti la sala</h3><p>Fotocamera e microfono del monitor arrivano a chi ha il comando. Nessun server esterno.</p></div>
+      <div class="card"><span class="tag">Solo diretta</span><h3>Nulla viene registrato</h3><p>Sul monitor resta la scritta «● IN DIRETTA» finché la Sala è aperta.</p></div>
+    </div>
+    <p class="callout" style="margin-top: 28px">Prima di usare la Sala informa i partecipanti nella familiarizzazione e raccogli il loro consenso, secondo il GDPR e le regole della tua struttura. <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/regia-web.md">Guida alla regia web</a></p>
+  </div>
+</section>
+
+<!-- ================= VIDEOTUTORIAL ================= -->
+<section class="band room alt" id="videotutorial">
+  <div class="container">
+    <div class="head center">
+      <span class="eyebrow">Videotutorial</span>
+      <h2>Impari guardando, e provi mentre guardi.</h2>
+      <p class="lead">Dieci capitoli, controller e monitor affiancati, dal primo collegamento al debriefing. A ogni capitolo una pausa «prova tu».</p>
+    </div>
+    <figure class="shot">
+      <div class="frame"><video src="video/videotutorial.mp4" poster="video/videotutorial_poster.jpg" controls playsinline preload="none" aria-label="Videotutorial: i due tablet, dal primo collegamento al debriefing"></video></div>
+      <figcaption>Nel video l'immagine della Sala, il nome della rete e l'indirizzo sono sfocati per riservatezza. <a href="video/videotutorial.mp4" download>Scarica il video</a></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= DEBRIEFING ================= -->
+<section class="band" id="debriefing">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Registro e debriefing</span>
+      <h2>Alla fine sai com'è andata, al secondo.</h2>
+      <p class="lead">Quello che fanno i partecipanti si annota da solo; quello che osservi tu lo aggiungi con un tocco. La simulazione si salva nella <b>Storia Sim</b>, con il verbale in PDF.</p>
+    </div>
+    <div class="log" role="img" aria-label="Esempio di registro: arresto a 00:09, riconosciuto a 00:16, compressioni a 00:22, adrenalina a 00:31, carica a 00:40, scarica da 150 joule e ROSC a 00:50">
+      <div><b>00:09</b><i class="k-pt">Paziente</i><span>Paziente senza polso: arresto cardiaco</span></div>
+      <div><b>00:16</b><i class="k-act">Azione</i><span>Riconosciuto l'arresto cardiaco</span></div>
+      <div><b>00:22</b><i class="k-act">Azione</i><span>Iniziate le compressioni</span></div>
+      <div><b>00:31</b><i class="k-dr">Farmaco</i><span>Adrenalina 1 mg</span></div>
+      <div><b>00:40</b><i class="k-el">Elettrica</i><span>Carica 150 J — partecipanti</span></div>
+      <div><b>00:50</b><i class="k-el">Elettrica</i><span>Shock 1: 150 J, premuto 3 s dopo l'invito</span></div>
+      <div><b>00:50</b><i class="k-pt">Paziente</i><span>Il paziente ha di nuovo il polso (ROSC)</span></div>
+    </div>
+    <div class="g3 gap-top">
+      <div class="big-num"><b>7 s</b><span>dall'arresto al riconoscimento: i tempi delle azioni critiche sono già calcolati</span></div>
+      <div class="big-num"><b>Da solo</b><span>scariche, pause attorno alla scarica, analisi del DAE, sonde, pressioni</span></div>
+      <div class="big-num"><b>PDF</b><span>squadra, esito, tempi e punti segnati: il verbale resta sul tablet</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= METODO ================= -->
+<section class="band room">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Il metodo, prima dello strumento</span>
+      <h2>Segue il ciclo della simulazione.</h2>
+    </div>
+    <div class="cycle">
+      <div><span class="tag">01 · Familiarizzazione</span><h3>Chi conosce lo strumento si sente al sicuro</h3><p>Presenti il dispositivo al gruppo: come si accende, dove si collegano le sonde, che cosa può fare.</p></div>
+      <div><span class="tag">02 · Scenario</span><h3>Fedeltà funzionale, al momento giusto</h3><p>Il monitor risponde alle azioni come nella pratica clinica; tu tieni lo scenario sugli obiettivi.</p></div>
+      <div><span class="tag">03 · Debriefing</span><h3>Si parte dai fatti</h3><p>«Dall'arresto al riconoscimento sono passati sette secondi: che cosa ve l'ha fatto capire?»</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEDELTÀ ================= -->
+<section class="band" id="verosimiglianza">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Fedeltà funzionale</span>
+      <h2>Il paziente risponde a quello che fanno i partecipanti.</h2>
+      <p class="lead">Dietro le curve lavora un modello che lega ritmo, circolo e respiro. L'ultima parola resta tua: ogni valore si corregge a mano, in qualsiasi momento.</p>
+    </div>
+    <div class="g3">
+      <div class="card"><span class="tag">RCP</span><h3>L'EtCO₂ racconta le compressioni</h3><p>Segue la qualità della RCP e la stanchezza di chi comprime; al ROSC arriva il picco.</p></div>
+      <div class="card"><span class="tag">Perfusione</span><h3>La pletismografia segue la pressione</h3><p>Con la pressione che scende l'onda si rimpicciolisce, poi «bassa perfusione» e «segnale debole».</p></div>
+      <div class="card"><span class="tag">Respiro</span><h3>Apnea e tubo in esofago</h3><p>In apnea la CO₂ si accumula e la saturazione cala; con il tubo in esofago le insufflazioni restano piatte.</p></div>
+      <div class="card"><span class="tag">Ritmi</span><h3>Transizioni credibili</h3><p>Dopo una scarica efficace una pausa elettrica e complessi che accelerano.</p></div>
+      <div class="card"><span class="tag">Pacing</span><h3>Cattura elettrica e meccanica</h3><p>Sopra soglia ogni spike cattura; con contatto scarso delle piastre la cattura si perde.</p></div>
+      <div class="card"><span class="tag">DAE e allarmi</span><h3>Come in reparto</h3><p>Voce guida, movimento rilevato, priorità degli allarmi, pausa audio interrotta da un allarme letale.</p></div>
+    </div>
+    <p class="note" style="margin-top: 24px">Il modello è semplificato e orientato alla plausibilità clinica dei segnali, pensato per la formazione: non è un simulatore fisiologico quantitativo.</p>
+  </div>
+</section>
+
+<!-- ================= REVISIONI ================= -->
+<section class="band room" id="revisione">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Revisioni e verifiche</span>
+      <h2>Riletto da nove punti di vista, provato a ogni modifica.</h2>
+      <p class="lead">Una revisione simulata con l'intelligenza artificiale, non il parere di professionisti reali: con Claude Code ogni agente ha ricevuto il ruolo di uno specialista; l'autore ha guidato il lavoro, scelto le correzioni e verificato ognuna sul tablet.</p>
+    </div>
+    <div class="g3">
+      <div class="big-num"><b>9</b><span>punti di vista: simulazione, medicina, assistenza infermieristica</span></div>
+      <div class="big-num"><b>44</b><span>correzioni cliniche, ciascuna con il suo test</span></div>
+      <div class="big-num"><b>1000+</b><span>controlli automatici a ogni modifica</span></div>
+    </div>
+    <div class="chips gap-top">
+      <span>Simulazione sanitaria</span><span>Anestesia e rianimazione</span><span>Emergenza territoriale</span><span>Cardiologia clinica</span><span>Emodinamica</span><span>Cardiochirurgia</span><span>Elettrofisiologia</span><span>Infermieristica di area critica</span><span>Collaudo e usabilità</span>
+    </div>
+    <p class="note" style="margin-top: 32px">Revisioni condotte con <b>Claude Code</b> (Claude™ è un marchio di Anthropic, PBC): simulate dall'intelligenza artificiale, guidate e verificate dall'autore; non sostituiscono la valutazione di professionisti reali né uno studio di validazione. <a href="https://github.com/Franz8787/similfranz-monitor-android/tree/main/revisioni">Metodo, revisori e correzioni</a></p>
+  </div>
+</section>
+
+<!-- ================= GUSCIO ================= -->
+<section class="band" id="guscio">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Il guscio da stampare</span>
+      <h2>Nato per il lavoro duro, pronto per un'altra vita.</h2>
+      <p class="lead">Il Galaxy® Tab Active2 è un tablet rugged del 2017, robusto, con batteria sostituibile. Nel guscio stampato in 3D diventa un monitor da appoggiare in sala: maniglia incassata, schermo inclinato, borsa per bracciale, elettrodi e saturimetro.</p>
+    </div>
+    <div class="g3">
+      <figure class="shot"><div class="frame"><img src="img/render_retro.jpg" alt="Il retro del guscio: maniglia, griglia dell'altoparlante, sportello e borsa per le sonde" loading="lazy"></div><figcaption><b>Retro</b> · maniglia, sportello, borsa</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="img/render_sportello.jpg" alt="Lo sportello posteriore aperto per raggiungere i tasti laterali del tablet" loading="lazy"></div><figcaption><b>Sportello</b> · i tasti laterali a portata</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="img/guscio_viste.jpg" alt="Disegno tecnico del guscio montato con il tablet: fronte, fianco destro e retro, 234 per 189 per 142 millimetri" loading="lazy"></div><figcaption><b>Ingombro</b> · 234 × 189 × 142 mm</figcaption></figure>
+    </div>
+    <div class="sub"><span class="eyebrow">Dal vero</span><h3>Non solo render: stampato e montato.</h3></div>
+    <figure class="shot"><div class="frame"><img src="img/foto_cornice_e_scocca_aperte.jpg" alt="Foto dall'alto: a sinistra il tablet appoggiato nella cornice nera, a destra la scocca bianca vuota con i quattro fori a goccia per i cavi, la griglia dell'altoparlante e l'apertura dello sportello" loading="lazy"></div><figcaption><b>Cornice e scocca aperte</b> · il tablet entra nella cornice, la scocca ha i fori a goccia per i cavi</figcaption></figure>
+    <div class="g3 gap-top">
+      <figure class="shot"><div class="frame"><img src="img/foto_monitor_e_controller_montati.jpg" alt="Il monitor montato nel guscio con i tasti blu di accensione, giallo CARICA e rosso di scarica accanto allo schermo; davanti il tablet controller con i parametri del paziente. Schermo del monitor sfocato nella foto" loading="lazy"></div><figcaption><b>Monitor e controller</b> · tasti a colori accanto allo schermo (sfocato nella foto)</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="img/foto_retro_tasca_aperta.jpg" alt="Il retro del guscio stampato: maniglia nera, scocca bianca con griglia e sportello, tasca a due vani nera con lo sportello aperto e le calamite agli angoli" loading="lazy"></div><figcaption><b>Retro</b> · tasca a due vani aperta, calamite agli angoli</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="img/foto_scocca_interno_inserti.jpg" alt="Dettaglio dell'interno della scocca bianca: una colonna d'angolo con l'inserto a caldo in ottone e le alette rigate che tengono fermo il tablet" loading="lazy"></div><figcaption><b>Dentro la scocca</b> · inserto a caldo in ottone nella colonna</figcaption></figure>
+    </div>
+    <figure class="shot gap-top" id="montaggio"><div class="frame"><video src="video/montaggio.mp4" poster="video/montaggio_poster.jpg" controls playsinline preload="none" aria-label="Videotutorial di montaggio del guscio in 7 passi"></video></div><figcaption><b>Il montaggio in sette passi</b>, un minuto e mezzo. <a href="video/montaggio.mp4" download>Scarica il video</a></figcaption></figure>
+    <ul class="feats row3 gap-top">
+      <li><h3>Fermo a 10°, cade solo a 27°</h3><p>Guscio e tablet simulati con il loro peso reale su una pedana inclinabile, come nella prova della norma IEC 60601-1.</p></li>
+      <li><h3>Ogni vite trova il suo inserto</h3><p>Nessuna compenetrazione fra i pezzi; inserti a caldo presi per intero, tasti e USB-C raggiungibili.</p></li>
+      <li><h3>File puliti per la stampante</h3><p>Ogni STL è un pezzo chiuso, già orientato per la stampa.</p></li>
+    </ul>
+    <div class="g2 gap-top">
+      <figure class="shot"><div class="frame"><img src="img/guscio_pedana.jpg" alt="Prova sulla pedana inclinabile: il guscio in avanti, all'indietro e di lato, con il grafico degli angoli di ribaltamento" loading="lazy"></div><figcaption><b>Pedana inclinabile</b> · in avanti, all'indietro e di lato</figcaption></figure>
+      <figure class="shot"><div class="frame"><img src="img/guscio_montabilita.jpg" alt="Tavola di montabilità: esploso con l'ordine di montaggio e la tabella delle verifiche di viti, inserti e giochi" loading="lazy"></div><figcaption><b>Montabilità</b> · esploso e verifiche di viti e giochi</figcaption></figure>
+    </div>
+    <p class="note" style="margin-top: 24px">Il guscio è stato stampato e montato; le prove di stabilità e montabilità qui sopra sono simulazioni al computer e non una certificazione. <a href="https://github.com/Franz8787/similfranz-monitor-android/tree/main/stampa3d">I file da stampare</a> · <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/stampa3d/MONTAGGIO.md">il montaggio passo per passo</a> · <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/stampa3d/verifiche/VERIFICHE.md">le verifiche</a> · stampata, in prova d'uso: <a href="https://github.com/Franz8787/similfranz-monitor-android/tree/main/stampa3d/tasca_due_vani">la tasca a due vani</a></p>
+  </div>
+</section>
+
+<!-- ================= GUIDA RAPIDA ================= -->
+<section class="band paper" id="guida">
+  <div class="container">
+    <div class="head">
+      <span class="eyebrow">Guida rapida per l'istruttore</span>
+      <h2>Dalla valigia allo scenario in cinque minuti.</h2>
+      <p class="lead">Quello che serve il giorno del corso. I dettagli nella <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/03-uso.md">guida all'uso</a>; un esempio completo nel <a href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/04-caso-d-uso.md">caso d'uso: arresto in FV sul territorio</a>.</p>
+    </div>
+    <div class="g4 steps">
+      <div class="card"><h3>Prima dei partecipanti</h3><ol><li>Accendi i tablet: sul controller tocca il monitor e scrivi il PIN.</li><li>Scegli il layout e lo stato del paziente o lo scenario.</li><li>Il monitor resta spento: lo accendono i partecipanti.</li></ol></div>
+      <div class="card"><h3>Familiarizzazione</h3><ul><li>Mostra accensione, sonde, NIBP, allarmi, defibrillatore.</li><li>Dichiara che cosa è simulato.</li><li>Crea un ambiente sicuro: qui l'errore diventa apprendimento.</li></ul></div>
+      <div class="card"><h3>Durante lo scenario</h3><ul><li><b>Sonde</b>: un tocco quando le vedi applicare.</li><li><b>Parametri</b>: <kbd>Subito</kbd> o <kbd>Prepara</kbd>.</li><li><b>Arresto</b>: <kbd>Avvia la RCP</kbd> e <kbd>Ventila</kbd>; l'esito delle scariche lo decidi tu.</li></ul></div>
+      <div class="card"><h3>Debriefing</h3><ul><li><kbd>FINE SCENARIO</kbd>: tempi, scariche, farmaci, punti segnati.</li><li>Lascia che sia il gruppo a ricostruire.</li><li>Salva in <b>Storia Sim</b>.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COME SI COSTRUISCE ================= -->
+<section class="band room" id="come">
+  <div class="container">
+    <div class="head center">
+      <span class="eyebrow">Come si costruisce</span>
+      <h2>Tre passi, un pomeriggio.</h2>
+      <p class="lead">Un Galaxy® Tab Active2 per il monitor e un secondo tablet per la regia. Tutto funziona offline, senza account e senza abbonamenti.</p>
+    </div>
+    <div class="g3 steps">
+      <div class="card"><h3>Installa le app</h3><p>APK pronti da installare dal tablet o con il cavo USB. Oppure ti guida Claude Code.</p><a class="more" href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/02-installazione.md">La guida</a></div>
+      <div class="card"><h3>Porta lo scenario in sala</h3><p>Collegamento, regia, scenari, debriefing: tutto nella guida all'uso.</p><a class="more" href="https://github.com/Franz8787/similfranz-monitor-android/blob/main/docs/03-uso.md">La guida</a></div>
+      <div class="card"><h3>Stampa il guscio</h3><p>Maniglia, schermo inclinato, borsa per cavi e sonde.</p><a class="more" href="https://github.com/Franz8787/similfranz-monitor-android/tree/main/stampa3d">I file</a></div>
+    </div>
+    <div class="ctas" style="justify-content: center; margin-top: 40px">
+      <a class="btn primary" href="https://github.com/Franz8787/similfranz-monitor-android">Scarica il progetto</a>
+      <span class="btn soon" title="Il DOI Zenodo arriva con la prima versione pubblica">DOI in arrivo</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ECOSISTEMA ================= -->
+<section class="band">
+  <div class="container">
+    <div class="head center" style="margin-bottom: 0">
+      <span class="eyebrow">L'ecosistema similFranz</span>
+      <h2>Vecchi dispositivi che tornano in sala.</h2>
+      <p class="lead">similFranz è nato con un <a href="https://franz8787.github.io/similfranz-saturimetro/">saturimetro su iPod touch® 4</a> ed è cresciuto con il <a href="https://franz8787.github.io/similfranz-monitor/">monitor su iPad mini®</a>: questa è la sua versione Android. Tutto l'ecosistema sulla <a href="https://franz8787.github.io/similfranz/">pagina similFranz</a>, per formatori, istruttori e facilitatori di simulazione.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="cols">
+      <p><b>Solo per la simulazione sanitaria.</b> similFranz Monitor per Android è uno strumento per la formazione: <b>non è un dispositivo medico</b>, non misura parametri reali, non eroga energia e non va mai usato su persone o per decisioni cliniche. I valori, i ritmi e i comportamenti sono simulati e semplificati a scopo formativo: non sostituiscono linee guida, protocolli o la formazione certificata. Lo strumento non è stato ancora oggetto di studi di validazione.</p>
+      <p><b>Nessuna garanzia.</b> Il software è distribuito «così com'è», senza garanzie di alcun tipo, secondo la licenza GPL-3.0; i modelli 3D secondo la licenza CC BY-NC 4.0. Installazione delle app, stampa 3D e montaggio del guscio (compresi gli inserti a caldo con il saldatore) avvengono sotto la responsabilità di chi li esegue. L'autore non risponde di danni a persone, dispositivi o cose.</p>
+      <p><b>Revisioni e prove.</b> Le revisioni specialistiche citate in questa pagina sono simulate con l'intelligenza artificiale (Claude Code) e non sono il parere di professionisti reali. Le prove del guscio sono simulazioni al computer: richiamano il metodo della norma IEC 60601-1 ma non costituiscono una certificazione.</p>
+      <p><b>Privacy.</b> Se usi la ripresa della sala (videocamera e microfono del monitor) o scrivi nomi nella Storia Sim, informa i partecipanti e raccogli il loro consenso secondo il GDPR e le regole della tua struttura. Il progetto non invia dati a nessun server.</p>
+      <p><b>Marchi.</b> I layout sono originali e non riproducono dispositivi in commercio. Il progetto è indipendente e non è affiliato né approvato da Samsung, Google, Apple, Anthropic o da alcun produttore di monitor o defibrillatori. Samsung® e Galaxy® sono marchi registrati di Samsung Electronics Co., Ltd.; Android™ è un marchio di Google LLC; Wi-Fi® e Wi-Fi Direct® sono marchi registrati di Wi-Fi Alliance; Apple®, Mac®, iPad®, iPad mini® e iPod touch® sono marchi di Apple Inc., registrati negli Stati Uniti e in altri Paesi; Windows® è un marchio registrato di Microsoft Corporation; Linux® è un marchio registrato di Linus Torvalds; GitHub® è un marchio registrato di GitHub, Inc.; Claude™ è un marchio di Anthropic, PBC; IEC è la sigla della International Electrotechnical Commission. Tutti i marchi citati appartengono ai rispettivi titolari e sono usati solo per indicare la compatibilità.</p>
+    </div>
+    <div class="sign">
+      <span>© 2026 <a href="https://orcid.org/0009-0009-9368-0212">Francesco Palmisano</a> (ilFranz) · sviluppato con l'aiuto di Claude Code, sotto la guida e la verifica dell'autore · codice e documentazione GPL-3.0, modelli 3D CC BY-NC 4.0</span>
+      <span>Grazie a FraPizz, il collega che ha messo a disposizione i due tablet Android · figura del paziente nella regia web: Goran tek-en con Rob Hurt, Wikimedia Commons, CC BY-SA 4.0</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

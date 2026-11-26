@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">similFranz Monitor</string>
+    <string name="app_name_long">similFranz Monitor</string>
+    <string name="blocca_schermo">Blocca schermo</string>
+    <string name="blocca_schermo_desc">Spegne lo schermo dall\'icona «Blocca schermo», senza usare il tasto di accensione.</string>
+    <string name="doppio_home">similFranz: tasti del monitor</string>
+    <string name="doppio_home_desc">Con il monitor a schermo: il tasto «app recenti» eroga la scarica, il tasto «indietro» accende e spegne il dispositivo simulato (tre pressioni di fila: app recenti), il tasto Home carica il defibrillatore (tre pressioni di fila: schermata Home), per non uscire per sbaglio dalla simulazione. Guarda solo questi tre tasti: non legge lo schermo e non raccoglie dati.</string>
+</resources>
