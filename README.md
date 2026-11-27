@@ -6,7 +6,7 @@ Fa parte dell'**ecosistema similFranz**: tutti gli strumenti sulla [pagina simil
 
 **Due tablet Android diventano un monitor-defibrillatore da simulazione e la sua cabina di regia.**
 Pensato per un Samsung® Galaxy® Tab Active2, gira su tablet Android™ 8 o successivi. Open source, per formatori,
-istruttori e facilitatori di simulazione sanitaria.
+istruttori e facilitatori di simulazione sanitaria. Nessun abbonamento, nessun account, nessun costo ricorrente.
 
 > **Solo per la simulazione sanitaria.** Non è un dispositivo medico: non misura, non eroga nulla e non va mai usato su
 > persone o per decisioni cliniche.
